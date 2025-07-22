@@ -1,0 +1,55 @@
+
+@GetMapping("/sign_up.go")
+	public String signupForm(Model model) {	    
+	    return "sign_up";
+	}
+	
+    
+    @PostMapping("/sign_up_ok.go")
+    public void signupUser(TransactionUserDTO dto, HttpServletResponse response) throws IOException {
+        response.setContentType("text/html; charset=UTF-8");
+        PrintWriter out = response.getWriter();
+        
+        TransactionUserDTO duplicateUser = mapper.findId(dto.getUser_id());
+        if (duplicateUser != null) {
+            out.println("<script>");
+            out.println("alert('이미 사용 중인 아이디입니다.');");
+            out.println("history.back();");
+            out.println("</script>");
+            return;
+        }
+        
+        int check = this.mapper.insertUser(dto);
+
+        if(check > 0) {
+            out.println("<script>");
+            out.println("alert('회원 등록 성공!!!');");
+            out.println("location.href='/'");
+            out.println("</script>");
+        } else {
+            out.println("<script>");
+            out.println("alert('회원 등록 실패!');");
+            out.println("history.back();");
+            out.println("</script>");
+        }
+        
+    }
+    
+    @GetMapping("/check_id.go")
+    public void checkId(@RequestParam("user_id") String id, HttpServletResponse response) throws IOException {
+        response.setContentType("text/plain; charset=UTF-8");
+        PrintWriter out = response.getWriter();
+        
+        if (id == null || id.trim().isEmpty()) {
+            out.println("아이디를 입력해주세요."); 
+            return;
+        }
+
+        TransactionUserDTO duplicateUser = mapper.findId(id);
+
+        if (duplicateUser != null) {
+            out.println("이미 사용 중인 아이디입니다.");
+        } else {
+            out.println("사용 가능한 아이디입니다.");
+        }
+    }
