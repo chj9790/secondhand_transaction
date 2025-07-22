@@ -1,0 +1,137 @@
+-- 대화 기능 테이블
+create table chat_room (
+    room_id     number(10) primary key,
+    item_id     number(10) not null,
+    seller_id   number(10) not null,
+    buyer_id    number(10) not null,
+    created_at  timestamp default current_timestamp
+);
+
+create table chat_message (
+    message_id   number(10) primary key,
+    room_id      number(10) not null,
+    sender_id    number(10) not null,
+    content      varchar2(100) not null,
+    sent_at      timestamp default current_timestamp,
+    is_read      number(1) default 0,    -- 안 읽은 메세지 표시
+
+    constraint fk_chat_room foreign key (room_id)
+        references chat_room(room_id)
+);
+
+create sequence chat_room_seq
+    start with 1
+    increment by 1
+    nocache
+    nocycle;
+
+create or replace trigger trg_chat_room_id
+before insert on chat_room
+for each row
+begin
+    if :new.room_id is null then
+        select chat_room_seq.nextval into :new.room_id from dual;
+    end if;
+end;
+/
+
+create sequence chat_message_seq
+    start with 1
+    increment by 1
+    nocache
+    nocycle;
+
+create or replace trigger trg_chat_message_id
+before insert on chat_message
+for each row
+begin
+    if :new.message_id is null then
+        select chat_message_seq.nextval into :new.message_id from dual;
+    end if;
+end;
+/
+
+--  채팅방 중복 생성 방지
+alter table chat_room 
+add constraint uq_chat_unique_room
+unique (item_id, seller_id, buyer_id);
+
+
+--  찜 기능 테이블
+create table wish_list (
+    user_id      varchar2(20) not null,
+    product_num number(10) not null,
+    added_at     timestamp default current_timestamp,
+    constraint pk_wish primary key (user_id, product_num),
+    constraint fk_user foreign key (user_id) references transaction_user(user_id),
+    constraint fk_product foreign key (product_num) references transaction_product(product_num)
+);
+
+-- 댓글 테이블
+create table product_comment (
+    comment_id      number(10) primary key,                     
+    product_num    number(10) not null,                      
+    user_id         varchar2(20) not null,                      
+    comment_content varchar2(500) not null,                     
+    comment_date    timestamp default current_timestamp,        
+
+    constraint fk_comment_product foreign key (product_num)
+        references transaction_product(product_num)
+        on delete cascade,
+
+    constraint fk_comment_user foreign key (user_id)
+        references transaction_user(user_id)
+        on delete cascade
+);
+
+-- 댓글 신고 테이블
+create table comment_report (
+    report_id       number(10) primary key,
+    comment_id      number(10) not null,
+    reporter_id     varchar2(20) not null,
+    report_reason   varchar2(200),
+    report_date     timestamp default current_timestamp,
+
+    constraint fk_report_comment foreign key (comment_id)
+        references product_comment(comment_id)
+        on delete cascade,
+
+    constraint fk_report_user foreign key (reporter_id)
+        references transaction_user(user_id)
+        on delete cascade
+);
+
+-- 상품 신고 테이블
+create table product_report (
+    report_id       number(10) primary key,
+    product_num    number(10) not null,
+    reporter_id     varchar2(20) not null,
+    report_reason   varchar2(200),
+    report_date     timestamp default current_timestamp,
+
+    constraint fk_report_product foreign key (product_num)
+        references transaction_product(product_num)
+        on delete cascade,
+
+    constraint fk_report_user_product foreign key (reporter_id)
+        references transaction_user(user_id)
+        on delete cascade
+);
+
+-- 결제 테이블
+create table payment (
+    payment_id      number(10) primary key,
+    user_id         varchar2(20) not null,
+    product_num    number(10) not null,
+    amount          number(10, 2) not null, 
+    payment_method  varchar2(20),           		-- 결제 수단
+    payment_status  varchar2(20) default 'completed', 	-- 결제 상태
+    paid_at         timestamp default current_timestamp,
+
+    constraint fk_payment_user foreign key (user_id)
+        references transaction_user(user_id),
+
+    constraint fk_payment_product foreign key (product_num)
+        references transaction_product(product_num)
+        on delete cascade
+);
