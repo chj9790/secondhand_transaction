@@ -1,0 +1,16 @@
+mybatis-config.xml
+
+<typeAlias type="com.example.transaction.model.TransactionUserDTO" alias="User" />
+
+
+xml 파일
+
+<insert id="insertUser" parameterType="User">
+	    insert into transaction_user values (
+	        #{user_id}, #{user_pwd}, #{user_name}, #{user_age},
+	        #{user_email}, #{user_phone}, #{user_addr}, SYSDATE
+	    )
+	</insert>
+	<select id="findId" resultType="User">
+	    select * from transaction_user where user_id = #{user_id}
+	</select>
