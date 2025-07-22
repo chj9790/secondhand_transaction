@@ -1,0 +1,8 @@
+// 물품 테이블 추가 내용입니다.
+// 테이블은 처음 메인 저장소에 올려진 변경안으로 생성하시고 아래 내용 추가하시면 됩니다.
+
+alter table transaction_product add product_title varchar2(100) not null;
+alter table transaction_product add product_hits number(10) default 0;
+alter table transaction_product add product_status varchar2(50) default '판매중';
+
+commit;
