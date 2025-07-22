@@ -208,7 +208,7 @@ ________________________________________________________________________________
 <style>
     body {
         font-family: 'Segoe UI', sans-serif;
-        background-color: #f9f9f9;
+        background-color: #f4f7fb;
         margin: 0;
         padding: 0;
         display: flex;
@@ -254,7 +254,7 @@ ________________________________________________________________________________
 
     .search-bar input[type="submit"] {
         padding: 8px 16px;
-        background-color: #ff7e36;
+        background-color: #2b7cff;
         color: white;
         border: none;
         border-radius: 5px;
@@ -269,7 +269,7 @@ ________________________________________________________________________________
     }
 
     .product-count strong {
-        color: #ff6f0f;
+        color: #2b7cff;
     }
 
     .product-list {
@@ -285,13 +285,13 @@ ________________________________________________________________________________
         display: flex;
         flex-direction: column;
         padding: 12px;
-        box-shadow: 1 2px 5px rgba(0,0,0,0.05);
+        box-shadow: 1px 2px 5px rgba(0,0,0,0.05);
         transition: 0.2s ease;
         box-sizing: border-box;
     }
 
     .product-card:hover {
-        background-color: #f1f1f1;
+        background-color: #eef4ff;
     }
 
     .product-img {
@@ -309,7 +309,7 @@ ________________________________________________________________________________
     .product-info a {
         font-size: 18px;
         font-weight: 600;
-        color: #333;
+        color: #2a2a2a;
         text-decoration: none;
     }
 
@@ -327,11 +327,11 @@ ________________________________________________________________________________
         font-weight: bold;
         margin-top: 4px;
         font-size: 16px;
-        color: #FF5722;
+        color: #4e8fe1;
     }
 
     .settings-btn {
-        background-color: #ddd;
+        background-color: #dbe7ff;
         border: none;
         padding: 8px 16px;
         border-radius: 5px;
@@ -347,7 +347,7 @@ ________________________________________________________________________________
         gap: 6px;
         padding: 10px 20px;
         border-radius: 12px;
-        background-color: #fff7f0;
+        background-color: #f2f7fd;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 
@@ -356,22 +356,22 @@ ________________________________________________________________________________
         padding: 8px 14px;
         font-size: 14px;
         font-weight: 500;
-        color: #ff6f0f;
+        color: #2b7cff;
         background-color: white;
-        border: 1px solid #ffddb9;
+        border: 1px solid #b3d3ff;
         border-radius: 8px;
         text-decoration: none;
         transition: all 0.2s ease;
     }
 
     .page-btn:hover {
-        background-color: #fff0e1;
+        background-color: #dceaff;
     }
 
     .page-btn.active {
-        background-color: #ff6f0f;
+        background-color: #2b7cff;
         color: white;
-        border-color: #ff6f0f;
+        border-color: #2b7cff;
     }
 
     .page-btn.first,
@@ -384,9 +384,9 @@ ________________________________________________________________________________
 
 <div class="sidebar">
     <form method="get" action="secondhand_list.go">
-        <h3>지역 선택</h3> <!-- 위치는 임시용 추후에 변경 예정 -->
+        <h3>지역 선택</h3>
         <label><input type="checkbox" name="area" value="서울"> 서울</label>
-        <label><input type="checkbox" name="area" value="부산"> 부산</label>      
+        <label><input type="checkbox" name="area" value="부산"> 부산</label>
         <label><input type="checkbox" name="area" value="인천"> 인천</label>
         <label><input type="checkbox" name="area" value="대구"> 대구</label>
         <label><input type="checkbox" name="area" value="대전"> 대전</label>
@@ -423,7 +423,7 @@ ________________________________________________________________________________
             <div class="product-card">
                 <img class="product-img" src="${p.product_img}" alt="이미지">
                 <div class="product-info">
-                    <a href="product_detail.go?product_code=${p.product_code}">${p.product_name}</a>
+                    <a href="product_detail.go?product_code=${p.product_code}">${p.product_title}</a>
                     <div class="product-meta">${p.sales_area} · ${p.product_date}</div>
                     <div class="product-price"><fmt:formatNumber value="${p.sales_price}" type="number" />원</div>
                 </div>
@@ -433,7 +433,6 @@ ________________________________________________________________________________
 
     <br><br>
 
-    <!-- 페이징 버튼 -->
     <div class="pagination-wrapper" align="center">
         <div class="pagination">
             <c:if test="${paging.page > paging.block}">
