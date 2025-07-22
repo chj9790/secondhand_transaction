@@ -1,0 +1,287 @@
+// 사용한 typeAliases //
+
+<typeAliases>
+		<typeAlias type="com.boot.transaction.model.CategoryDTO" alias="Category"/>
+		<typeAlias type="com.boot.transaction.model.ProductDTO" alias="Product"/>
+		<typeAlias type="com.boot.transaction.model.UserDTO" alias="User"/>
+		<typeAlias type="com.boot.transaction.model.ManagerDTO" alias="Manager"/>
+		<typeAlias type="com.boot.transaction.model.PageDTO" alias="Page"/>
+	</typeAliases>
+
+
+
+// include 
+// #####  header.jsp (views 폴더에 include 폴더 생성 후 추가)  ##### //
+
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+
+<style type="text/css">
+	
+	.header {
+		margin: 50px auto 40px;
+	}
+	
+	.main-btn {
+		margin-top: 50px;
+	}
+	
+	.main-btn td {
+		cursor: pointer;
+	}
+	
+</style>
+
+<title>Insert title here</title>
+</head>
+<body>
+
+	<div class="header" align="center">
+		<div class="header-title">
+			<h1>중고 거래 사이트</h1>
+		</div>
+		
+		<div class="main-btn">
+			<table border="1">
+				<tr>
+					<td class="home-btn" onclick="location.href='/'">HOME</td>
+					<td class="sales-btn" onclick="location.href='product_sales.go'">물품 판매</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+
+</body>
+</html>
+
+
+
+// #####  application.properties 파일의 하단에 추가  ##### //
+
+spring.servlet.multipart.enabled=true
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=10MB
+
+
+
+// #####  Mapper 클래스에 추가  ##### //
+
+List<CategoryDTO> category_list();
+	
+int product_insert(ProductDTO pdto);
+
+
+
+
+// #####  xml 파일에 추가  ##### //
+
+<select id="category_list" resultType="Category">
+		select * from transaction_category
+	</select>
+
+	<insert id="product_insert" parameterType="Product">
+		<selectKey keyProperty="product_num" resultType="int" order="BEFORE">
+			select nvl(max(product_num), 0) + 1 from transaction_product
+		</selectKey>
+		
+		insert into transaction_product values(#{product_num}, #{category_code}, #{product_name},
+			sysdate, #{product_img}, #{product_des}, #{user_id}, #{sales_price}, #{sales_area}, 
+			#{product_title}, default, default)
+	</insert>
+
+
+
+// #####  controller 에 추가  ##### //
+
+@GetMapping("product_sales.go")
+	public String product_sales(Model model) {
+		
+		List<CategoryDTO> categoryList = this.mapper.category_list();
+		
+		model.addAttribute("categoryList", categoryList);
+		
+		return "product_sales";
+	}
+	
+	@PostMapping("product_sales_ok.go")
+	public void product_sales_ok(ProductDTO pdto,
+	                             HttpServletRequest request,
+	                             HttpServletResponse response) throws IllegalStateException, IOException {
+
+		response.setContentType("text/html; charset=UTF-8");
+	    PrintWriter out = response.getWriter();
+		
+	    MultipartFile[] files = pdto.getProduct_img_File();
+	    List<String> savedFileNames = new ArrayList<>();
+
+	    if(files != null && files.length > 0) {
+	        String uploadPath = request.getServletContext().getRealPath("resources/upload/");
+
+	        for (MultipartFile file : files) {
+	            if (!file.isEmpty()) {
+	                String originalFileName = file.getOriginalFilename();
+
+	                // 파일명 중복 방지
+	                String uuid = UUID.randomUUID().toString();
+	                String savedFileName = uuid + "_" + originalFileName;
+
+	                File destFile = new File(uploadPath, savedFileName);
+	                if (!destFile.getParentFile().exists()) {
+	                    destFile.getParentFile().mkdirs();
+	                }
+	                savedFileNames.add(savedFileName);
+	                file.transferTo(destFile);
+	                	
+	            }
+	        }
+
+	        String imgNames = String.join(",", savedFileNames);
+	        pdto.setProduct_img(imgNames);
+	    }
+
+	    // DB insert
+	    int insertCheck = this.mapper.product_insert(pdto);
+
+	    if (insertCheck > 0) {
+	        out.println("<script>");
+	        out.println("alert('물품 등록 성공');");
+	        out.println("location.href='/'");
+	        out.println("</script>");
+	    } else {
+	        out.println("<script>");
+	        out.println("alert('물품 등록 실패');");
+	        out.println("history.back();");
+	        out.println("</script>");
+	    }
+	}
+
+
+
+
+// #####  product_sales.jsp 파일 생성  ##### //
+
+ <%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>  
+  
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style type="text/css">
+	
+	.btn {
+		margin-top: 30px;
+	}
+	
+	.sm-text {
+		color: gray;
+	}
+	
+</style>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript">
+
+    $(document).ready(function () {
+        $("#upload").on("submit", function (e) {
+            const files = $("input[name='product_img_File[]']")[0].files;
+
+            if(files.length > 3) {
+            	alert("사진은 최대 3개까지만 업로드할 수 있습니다.");
+                e.preventDefault();
+            }
+            
+            if($("select[name='category_code']").val() == 'none') {
+            	alert("물품의 카테고리를 설정해주세요.");
+                e.preventDefault();
+            }
+        });
+    });
+    
+</script>
+
+<title>Insert title here</title>
+</head>
+<body>
+
+	
+	<jsp:include page="include/header.jsp" />
+	
+
+	<div class="body" align="center">
+		<c:set var="cList" value="${categoryList}" />
+		
+		<form id="upload" method="post" enctype="multipart/form-data"
+			action="<%=request.getContextPath() %>/product_sales_ok.go">
+		
+			<div class="tbl">
+				<table border="1" width="800">
+					<tr>
+						<th>판매 글 제목</th>
+						<td colspan="3"><input name="product_title" required></td>
+					</tr>
+				
+					<tr>
+						<th>물품 카테고리</th>
+						<td>
+							<select name="category_code">
+								<option value="none">:::카테고리 선택:::</option>
+								<c:forEach var="category_dto" items="${cList}">
+									<option value="${category_dto.category_code }">${category_dto.category_name }</option>
+								</c:forEach>
+							</select>
+						</td>
+						
+						<th>물품명</th>
+						<td><input name="product_name" required></td>
+					</tr>
+					
+					<tr>
+						<th>물품 설명</th>
+						<td colspan="3"><textarea rows="5" cols="30" name="product_des" required></textarea></td>
+					</tr>
+					
+					<tr>
+						<th>물품 이미지</th>
+						<td colspan="3">
+							<input type="file" name="product_img_File[]" multiple="multiple">
+							<small class="sm-text">사진은 최대 3개까지만 업로드할 수 있습니다.</small>
+						</td>
+					</tr>
+					
+					<!-- 아래 input 태그는 회원 로그인 세션작업 이후 세션을 통해 hidden으로 받아오는 기능으로 수정 예정 -->
+					<tr>
+						<th>회원 ID</th>
+						<td colspan="3"><input name="user_id"></td>
+					</tr>
+					
+					<!-- 아래 input 태그도 동일. 추후 회원 정보 세션 통해서 작업 예정. -->
+					<tr>
+						<th>판매 지역</th>
+						<td colspan="3"><input name="sales_area"></td>
+					</tr>
+					
+					<tr>
+						<th>판매 가격</th>
+						<td colspan="3"><input name="sales_price" required></td>
+					</tr>
+				
+				</table>
+			</div>
+			
+			<div class="btn">
+				<button type="submit">물품 등록</button>
+				<button type="button" onclick="location.href='/'">등록 취소</button>
+			</div>
+		
+		</form>
+		
+	</div>
+
+</body>
+</html>
