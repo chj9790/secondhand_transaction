@@ -51,7 +51,6 @@ begin
 end;
 /
 
---  채팅방 중복 생성 방지
 alter table chat_room 
 add constraint uq_chat_unique_room
 unique (item_id, seller_id, buyer_id);
