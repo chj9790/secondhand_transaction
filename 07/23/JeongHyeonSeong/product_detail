@@ -1,0 +1,118 @@
+// PaymentDTO 클래스
+
+package com.boot.transaction.model;
+
+import java.sql.Timestamp;
+
+import lombok.Data;
+
+@Data
+public class PaymentDTO {
+    private int payment_id;
+    private String user_id;
+    private int product_num;
+    private int amount;
+    private String payment_method;
+    private String payment_status;
+    private Timestamp paid_at;
+
+}
+
+
+
+------------------------------------------------------------
+
+// Mapper 클래스
+
+ProductDTO selectProduct(int product_num);
+
+void insertWishList(@Param("user_id") String user_id, @Param("product_num") int product_num);
+
+void insertPayment(PaymentDTO payment);
+
+-----------------------------------------------------------
+
+// 컨트롤러 클래스
+
+ 
+
+@GetMapping("product_detail.go")
+public String productDetail(@RequestParam(name = "product_num") int productNum, Model model) {
+    ProductDTO product = mapper.selectProduct(productNum);
+    model.addAttribute("product", product);
+    return "product_detail";
+}
+
+
+@PostMapping("wishlist_insert.do")
+public String wishlistInsert(@RequestParam String user_id, @RequestParam int product_num) {
+    mapper.insertWishList(user_id, product_num);
+    return "redirect:/product_detail.go?product_num=" + product_num;
+}
+
+@PostMapping("payment_form.go")
+public String paymentForm(@RequestParam int product_num, Model model) {
+    ProductDTO product = mapper.selectProduct(product_num);
+    model.addAttribute("product", product);
+    return "payment_form";
+}
+
+@PostMapping("payment_complete.do")
+public String paymentComplete(PaymentDTO payment) {
+    payment.setPayment_status("completed");
+    payment.setPaid_at(new Timestamp(System.currentTimeMillis()));
+    mapper.insertPayment(payment);
+    return "redirect:/payment_success.go";
+}
+
+------------------------------------------------------
+
+// transaction.xml에 추가
+
+<select id="selectProduct" parameterType="int" resultType="Product">
+    select * from transaction_product where product_num = #{product_num}
+</select>
+
+------------------------------------------------------
+
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>상품 상세</title>
+</head>
+<body>
+
+<jsp:include page="include/header.jsp" />
+
+<h2>${product.product_name}</h2>
+<img src="${product.product_img}" width="300" height="300">
+<p><b>가격:</b> ${product.sales_price}원</p>
+<p><b>지역:</b> ${product.sales_area}</p>
+<p><b>등록일:</b> ${product.product_date}</p>
+<p><b>판매자:</b> ${product.user_id}</p>
+
+
+<form method="post" action="wishlist_insert.do">
+    <input type="hidden" name="user_id" value="${user.userId}">
+    <input type="hidden" name="product_num" value="${product.product_num}">
+    <button type="submit">찜하기</button>
+</form>
+
+
+<form method="post" action="payment_form.go">
+    <input type="hidden" name="product_num" value="${product.product_num}">
+    <button type="submit">구매하기</button>
+</form>
+
+
+<form method="post" action="chat_room_insert.go">
+    <input type="hidden" name="buyer_id" value="${user.userId}">
+    <input type="hidden" name="seller_id" value="${product.user_id}">
+    <input type="hidden" name="product_num" value="${product.product_num}">
+    <button type="submit">대화하기</button>
+</form>
+
+</body>
+</html>>
