@@ -1,0 +1,16 @@
+DROP TABLE transaction_user CASCADE CONSTRAINTS;
+
+CREATE TABLE transaction_user (
+    user_id         VARCHAR2(20) PRIMARY KEY,
+    user_pwd        VARCHAR2(20) NOT NULL,
+    user_name       VARCHAR2(30) NOT NULL,
+    user_nickname   VARCHAR2(20) NOT NULL,   -- 닉네임 추가
+    user_age        NUMBER(3) NOT NULL,
+    user_email      VARCHAR2(50) NOT NULL,
+    user_phone      VARCHAR2(20) NOT NULL,
+    user_zipcode    VARCHAR2(10),         -- 우편번호
+    user_addr       VARCHAR2(100),        -- 기본 주소
+    user_addr_detail VARCHAR2(100),       -- 상세 주소
+    user_regdate    DATE NOT NULL
+);
+commit;
