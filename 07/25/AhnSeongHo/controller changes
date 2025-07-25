@@ -1,0 +1,181 @@
+private boolean isValidUserId(String userId) {
+	    return userId != null && userId.matches("^[a-zA-Z0-9]{6,12}$");
+	}
+
+	private boolean isValidPassword(String password) {
+	    return password != null && password.matches("^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[\\W_]).{8,16}$");
+	}
+	
+	private boolean isValidKoreanName(String name) {
+	    return name != null && name.matches("^[가-힣]+$");
+	}
+	
+	private boolean isValidNickname(String nickname) {
+	    return nickname != null && nickname.matches("^[가-힣a-zA-Z0-9_]{2,20}$");
+	}
+	
+	@GetMapping("/sign_up.go")
+	public String signupForm(Model model) {	    
+	    return "sign_up";
+	}
+	
+    
+	@PostMapping("/sign_up_ok.go")
+	public void signupUser(UserDTO dto,
+	        @RequestParam("email_id") String emailId,
+	        @RequestParam("email_domain") String emailDomain,
+	        @RequestParam(value = "email_custom", required = false) String emailCustom,
+	        @RequestParam("phone1") String phone1,
+	        @RequestParam("phone2") String phone2,
+	        @RequestParam("phone3") String phone3,
+	        @RequestParam("user_pwd_confirm") String user_pwd_confirm,
+	        @RequestParam("user_zipcode") String user_zipcode,
+	        @RequestParam("user_addr_base") String user_addr_base,
+	        @RequestParam("user_addr_detail") String user_addr_detail,
+	        @RequestParam("user_nickname") String user_nickname,
+	        HttpServletResponse response) throws IOException {
+	    
+	    response.setContentType("text/html; charset=UTF-8");
+	    PrintWriter out = response.getWriter();
+	    
+	    	    	    	    
+	    if (!isValidUserId(dto.getUser_id())) {
+	        out.println("<script>");
+	        out.println("alert('아이디는 6~12자, 영문과 숫자만 포함되어야 합니다.');");
+	        out.println("history.back();");
+	        out.println("</script>");
+	        return;
+	    }
+	    
+	    UserDTO duplicateUser = mapper.findId(dto.getUser_id());
+	    if (duplicateUser != null) {
+	        out.println("<script>");
+	        out.println("alert('이미 사용 중인 아이디입니다.');");
+	        out.println("history.back();");
+	        out.println("</script>");
+	        return;
+	    }
+	    
+	    dto.setUser_nickname(user_nickname);
+	    
+	    if (user_nickname == null || user_nickname.trim().isEmpty()) {
+	        out.println("<script>");
+	        out.println("alert('닉네임을 입력해주세요.');");
+	        out.println("history.back();");
+	        out.println("</script>");
+	        return;
+	    }
+	    
+	    UserDTO duplicateNickname = mapper.findNickname(user_nickname);
+	    if (duplicateNickname != null) {
+	        out.println("<script>");
+	        out.println("alert('이미 사용 중인 닉네임입니다.');");
+	        out.println("history.back();");
+	        out.println("</script>");
+	        return;
+	    }
+	    
+	    if (!isValidNickname(user_nickname)) {
+	        out.println("<script>");
+	        out.println("alert('닉네임은 2~20자, 한글/영문/숫자/_ 만 가능합니다.');");
+	        out.println("history.back();");
+	        out.println("</script>");
+	        return;
+	    }
+
+	    
+	    if (!isValidPassword(dto.getUser_pwd())) {
+	        out.println("<script>");
+	        out.println("alert('비밀번호는 8~16자리이면서 영문자, 숫자, 특수문자를 모두 포함해야 합니다.');");
+	        out.println("history.back();");
+	        out.println("</script>");
+	        return;
+	    }
+
+	    
+	    if (!dto.getUser_pwd().equals(user_pwd_confirm)) {
+	        out.println("<script>");
+	        out.println("alert('비밀번호를 정확히 입력했는지 확인해주세요!');");
+	        out.println("history.back();");
+	        out.println("</script>");
+	        return;
+	    }
+
+	    
+	    if (!isValidKoreanName(dto.getUser_name())) {
+	        out.println("<script>");
+	        out.println("alert('이름은 한글만 입력 가능합니다.');");
+	        out.println("history.back();");
+	        out.println("</script>");
+	        return;
+	    }
+	    
+	    
+	    String domain = "direct".equals(emailDomain) && emailCustom != null && !emailCustom.trim().isEmpty()
+	            ? emailCustom.trim()
+	            : emailDomain;
+	    dto.setUser_email(emailId + "@" + domain);
+	    
+	    
+	    dto.setUser_phone(phone1 + "-" + phone2 + "-" + phone3);
+	    
+	    dto.setUser_zipcode(user_zipcode);
+	    dto.setUser_addr(user_addr_base);
+	    dto.setUser_addr_detail(user_addr_detail);
+	    	   	    
+
+	    int check = this.mapper.insertUser(dto);
+
+	    if (check > 0) {
+	        out.println("<script>");
+	        out.println("alert('회원 등록 성공!!!');");
+	        out.println("location.href='/'");
+	        out.println("</script>");
+	    } else {
+	        out.println("<script>");
+	        out.println("alert('회원 등록 실패!');");
+	        out.println("history.back();");
+	        out.println("</script>");
+	    }
+	}
+
+
+    
+    @GetMapping("/check_id.go")
+    public void checkId(@RequestParam("user_id") String id, HttpServletResponse response) throws IOException {
+        response.setContentType("text/html; charset=UTF-8");
+        PrintWriter out = response.getWriter();
+        
+        if (id == null || id.trim().isEmpty()) {
+            out.println("아이디를 입력해주세요."); 
+            return;
+        }
+
+        UserDTO duplicateUser = mapper.findId(id);
+
+        if (duplicateUser != null) {
+            out.println("이미 사용 중인 아이디입니다.");
+        } else {
+            out.println("사용 가능한 아이디입니다.");
+        }
+    }
+    
+    @GetMapping("/check_nickname.go")
+    @ResponseStatus
+    public void checkNickname(@RequestParam("user_nickname") String nickname, HttpServletResponse response) throws IOException {
+        response.setContentType("text/html; charset=UTF-8");
+        PrintWriter out = response.getWriter();
+
+        if (nickname == null || nickname.trim().isEmpty()) {
+            out.println("닉네임을 입력해주세요.");
+            return;
+        }
+
+        UserDTO duplicateNickname = mapper.findNickname(nickname);
+
+        if (duplicateNickname != null) {
+            out.println("이미 사용 중인 닉네임입니다.");
+        } else {
+            out.println("사용 가능한 닉네임입니다.");
+        }
+    }
