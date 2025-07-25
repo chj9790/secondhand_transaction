@@ -1,3 +1,14 @@
+수정
+
+<insert id="insertUser" parameterType="User">
+	    insert into transaction_user values (
+	        #{user_id}, #{user_pwd}, #{user_name}, #{user_nickname}, 
+	        #{user_age}, #{user_email}, #{user_phone}, #{user_zipcode},
+	        #{user_addr}, #{user_addr_detail}, sysdate
+	    )
+	</insert>
+
+
 추가
 
 <select id="findNickname" parameterType="String" resultType="User">
@@ -5,3 +16,4 @@
 	    from transaction_user
 	    where user_nickname = #{user_nickname}
 	</select>
+
