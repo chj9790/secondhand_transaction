@@ -1,0 +1,24 @@
+-- 1. 시퀀스 생성
+CREATE SEQUENCE trans_chat_msg_seq START WITH 1 INCREMENT BY 1;
+
+-- 2. 테이블 생성
+CREATE TABLE transaction_chat_messages (
+    message_id NUMBER PRIMARY KEY,
+    from_user VARCHAR2(50) NOT NULL,
+    to_user VARCHAR2(50) NOT NULL,
+    product_num NUMBER NOT NULL,
+    message CLOB NOT NULL,
+    sent_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_read NUMBER(1) DEFAULT 0
+);
+
+-- 3. 트리거 생성
+CREATE OR REPLACE TRIGGER trans_chat_msg_bi
+BEFORE INSERT ON transaction_chat_messages
+FOR EACH ROW
+BEGIN
+    IF :NEW.message_id IS NULL THEN
+        SELECT trans_chat_msg_seq.NEXTVAL INTO :NEW.message_id FROM dual;
+    END IF;
+END;
+/
