@@ -1,0 +1,7 @@
+추가
+
+<select id="findNickname" parameterType="String" resultType="User">
+	    select *
+	    from transaction_user
+	    where user_nickname = #{user_nickname}
+	</select>
