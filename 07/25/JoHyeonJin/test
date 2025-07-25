@@ -1,0 +1,6 @@
+<select id="getMessageHistory" resultType="Chat">
+	    select * from transaction_chat_messages where
+	        ((from_user = #{from} and to_user = #{to})
+	        or (from_user = #{to} and to_user = #{from})) and product_num = #{product_num}
+	    	order by sent_time asc
+	</select>
