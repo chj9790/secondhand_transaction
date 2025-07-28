@@ -1,0 +1,19 @@
+    <select id="getCommentsByProduct" parameterType="int" resultType="com.boot.transaction.model.ProductCommentDTO">
+        SELECT * FROM product_comment WHERE product_num = #{product_num} ORDER BY comment_date DESC
+    </select>
+
+    <insert id="insertProductComment" parameterType="com.boot.transaction.model.ProductCommentDTO">
+        INSERT INTO product_comment (comment_id, product_num, user_id, comment_content)
+        VALUES (product_comment_seq.NEXTVAL, #{product_num}, #{user_id}, #{comment_content})
+    </insert>
+    
+    
+    <delete id="deleteProductComment" parameterType="int">
+        DELETE FROM product_comment WHERE comment_id = #{comment_id}
+    </delete>
+    
+    <update id="updateProductComment" parameterType="map">
+        UPDATE product_comment
+        SET comment_content = #{comment_content}
+        WHERE comment_id = #{comment_id}
+    </update>
