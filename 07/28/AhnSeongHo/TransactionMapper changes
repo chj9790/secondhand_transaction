@@ -1,0 +1,5 @@
+추가.
+
+int updateUser(UserDTO user);
+
+String getPassword(String userId);
