@@ -122,19 +122,6 @@ function checkNicknameDuplicate() {
 }
 </script>
 
-<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-<script>
-function openPostcode() {
-    new daum.Postcode({
-        oncomplete: function(data) {
-            document.getElementById('user_zipcode').value = data.zonecode;
-            document.getElementById('user_addr_base').value = data.address;
-            document.getElementById('user_addr_detail').focus();
-        }
-    }).open();
-}
-</script>
-
 </head>
 <body>
 
@@ -247,6 +234,19 @@ function openPostcode() {
     <div>
         <jsp:include page="include/footer.jsp" />
     </div>
+
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script>
+function openPostcode() {
+    new daum.Postcode({
+        oncomplete: function(data) {
+            document.getElementById('user_zipcode').value = data.zonecode;
+            document.getElementById('user_addr_base').value = data.address;
+            document.getElementById('user_addr_detail').focus();
+        }
+    }).open();
+}
+</script>
 
 </body>
 </html>
