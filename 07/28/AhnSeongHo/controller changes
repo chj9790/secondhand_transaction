@@ -22,6 +22,36 @@
  	    return "user_my_page"; 
  	}
 
+@PostMapping("/login.go")
+	public void login(
+	    @RequestParam("userId") String userId,
+	    @RequestParam("userPwd") String userPwd,
+	    HttpSession session,
+	    HttpServletResponse response
+	) throws IOException {
+	    response.setContentType("text/html; charset=UTF-8");
+	    PrintWriter out = response.getWriter();
+
+	    UserDTO user = mapper.findId(userId);
+	    if (user != null && user.getUser_pwd().equals(userPwd)) {
+	        
+	        session.setAttribute("user", user);
+	        session.setAttribute("user_id", user.getUser_id());
+
+	        String loginUserNickname = user.getUser_nickname();
+
+	        out.println("<script>");
+	        out.println("alert('" + loginUserNickname + "님 환영합니다.');");  
+	        out.println("location.href='/'");
+	        out.println("</script>");
+	    } else {
+	        out.println("<script>");
+	        out.println("alert('아이디 또는 비밀번호를 다시 확인해주세요.');");
+	        out.println("history.back();");
+	        out.println("</script>");
+	    }
+	}
+
 	
 	추가.
 
