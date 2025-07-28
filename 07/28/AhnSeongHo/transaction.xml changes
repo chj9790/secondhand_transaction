@@ -1,0 +1,22 @@
+추가.
+
+<update id="updateUser" parameterType="User">
+	    update transaction_user
+	    set 
+	        user_pwd = #{user_pwd}, 
+	        user_name = #{user_name}, 
+	        user_nickname = #{user_nickname},
+	        user_age = #{user_age}, 
+	        user_email = #{user_email}, 
+	        user_phone = #{user_phone},
+	        user_zipcode = #{user_zipcode}, 
+	        user_addr = #{user_addr}, 
+	        user_addr_detail = #{user_addr_detail}
+	    where user_id = #{user_id}
+	</update>
+	
+	<select id="getPassword" resultType="String"> <!-- 회원정보 수정 시 비밀번호는 바꾸지 않는 경우를 처리하기 위해 만든 쿼리(user 테이블 pwd 속성은 not null로 되어있어서 없으면 오류남.) -->
+	    select user_pwd
+	    from transaction_user
+	    where user_id = #{userId}
+	</select>
