@@ -1,0 +1,135 @@
+수정.
+
+@GetMapping("user_my_page.go")
+ 	@ResponseStatus
+ 	public String my_page(HttpSession session, HttpServletResponse response) throws IOException {
+ 	    
+ 	    String loggedInUserId = (String) session.getAttribute("user_id");
+
+ 	    if (loggedInUserId == null) { 	        
+ 	        response.setContentType("text/html; charset=UTF-8");
+ 	        PrintWriter out = response.getWriter();
+ 	        out.println("<script>");
+ 	        out.println("alert('로그인 후 이용해 주세요.');");
+ 	        out.println("location.href='/';");  
+ 	        out.println("</script>");
+ 	        return null;  
+ 	    }
+
+ 	    UserDTO user = this.mapper.findId(loggedInUserId);
+ 	    session.setAttribute("user", user);  
+
+ 	    return "user_my_page"; 
+ 	}
+
+	
+	추가.
+
+ 	@PostMapping("/user_update_ok.go")
+ 	public void userUpdate(UserDTO user, 
+ 	    @RequestParam("email_id") String emailId, 
+ 	    @RequestParam("email_domain") String emailDomain,
+ 	    @RequestParam(value = "email_custom", required = false) String emailCustom,
+ 	    @RequestParam("phone1") String phone1,
+ 	    @RequestParam("phone2") String phone2,
+ 	    @RequestParam("phone3") String phone3,
+ 	    @RequestParam("user_pwd_confirm") String userPwdConfirm,
+ 	    @RequestParam("user_zipcode") String userZipcode,
+ 	    @RequestParam("user_addr_base") String userAddrBase,
+ 	    @RequestParam("user_addr_detail") String userAddrDetail,
+ 	    @RequestParam("user_nickname") String userNickname,
+ 	    HttpServletResponse response,
+ 	    HttpSession session) throws IOException {
+
+ 	    response.setContentType("text/html; charset=UTF-8");
+ 	    PrintWriter out = response.getWriter();
+
+ 	    String loggedInUserId = (String) session.getAttribute("user_id");
+
+ 	    if (loggedInUserId == null) {
+ 	        out.println("<script>");
+ 	        out.println("alert('로그인 후 이용해주세요.');");
+ 	        out.println("location.href='login.go';");
+ 	        out.println("</script>");
+ 	        return;
+ 	    }
+
+ 	    if (!isValidKoreanName(user.getUser_name())) {
+ 	        out.println("<script>");
+ 	        out.println("alert('이름은 한글만 입력 가능합니다.');");
+ 	        out.println("history.back();");
+ 	        out.println("</script>");
+ 	        return;
+ 	    }
+
+ 	    if (user.getUser_pwd() != null && !user.getUser_pwd().isEmpty()) {
+ 	        if (!isValidPassword(user.getUser_pwd())) {
+ 	            out.println("<script>");
+ 	            out.println("alert('비밀번호는 8~16자리이면서 영문자, 숫자, 특수문자를 모두 포함해야 합니다.');");
+ 	            out.println("history.back();");
+ 	            out.println("</script>");
+ 	            return;
+ 	        }
+ 	        if (!user.getUser_pwd().equals(userPwdConfirm)) {
+ 	            out.println("<script>");
+ 	            out.println("alert('비밀번호가 일치하지 않습니다.');");
+ 	            out.println("history.back();");
+ 	            out.println("</script>");
+ 	            return; 
+ 	        }
+ 	    } else {
+ 	        // 비밀번호 입력하지 않으면 기존 비밀번호를 유지
+ 	        String existingPassword = this.mapper.getPassword(user.getUser_id());  
+ 	        user.setUser_pwd(existingPassword);  
+ 	    }
+
+ 	    String email = emailId + "@" + (emailDomain.equals("direct") ? emailCustom : emailDomain);
+ 	    user.setUser_email(email);
+
+ 	    String phone = phone1 + "-" + phone2 + "-" + phone3;
+ 	    user.setUser_phone(phone);
+
+ 	    if (userNickname == null || userNickname.trim().isEmpty()) {
+ 	        out.println("<script>");
+ 	        out.println("alert('닉네임을 입력해주세요.');");
+ 	        out.println("history.back();");
+ 	        out.println("</script>");
+ 	        return;
+ 	    }
+ 	    
+ 	    if (!isValidNickname(userNickname)) {
+ 	        out.println("<script>");
+ 	        out.println("alert('닉네임은 2~20자, 한글/영문/숫자/_ 만 가능합니다.');");
+ 	        out.println("history.back();");
+ 	        out.println("</script>");
+ 	        return;
+ 	    }
+
+ 	    UserDTO duplicateNickname = this.mapper.findNickname(userNickname);
+ 	    if (duplicateNickname != null && !duplicateNickname.getUser_id().equals(loggedInUserId)) {
+ 	        out.println("<script>");
+ 	        out.println("alert('이미 사용 중인 닉네임입니다.');");
+ 	        out.println("history.back();");
+ 	        out.println("</script>");
+ 	        return;
+ 	    }
+
+ 	    user.setUser_zipcode(userZipcode);
+ 	    user.setUser_addr(userAddrBase);
+ 	    user.setUser_addr_detail(userAddrDetail);
+ 	    user.setUser_nickname(userNickname);
+ 	    
+ 	    int check = this.mapper.updateUser(user);
+
+ 	    if (check > 0) {
+ 	        out.println("<script>");
+ 	        out.println("alert('회원정보가 수정되었습니다.');");
+ 	        out.println("location.href='/';");
+ 	        out.println("</script>");
+ 	    } else {
+ 	        out.println("<script>");
+ 	        out.println("alert('회원정보 수정 실패!');");
+ 	        out.println("history.back();");
+ 	        out.println("</script>");
+ 	    }
+ 	}
