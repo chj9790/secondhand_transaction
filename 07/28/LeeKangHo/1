@@ -1,1 +1,15 @@
+// main.jsp 와 secondhand_search_list.jsp 수정
 
+
+
+<div class="product-list">
+		        <c:forEach var="p" items="${productList}">
+		            <c:set var="imgList" value="${fn:split(p.product_img, ',')}" />
+		            <div class="product-card" onclick="location.href='product_detail.go?product_num=${p.product_num}'" style="cursor: pointer;">
+					    <div class="product-img-wrapper">
+					        <img src="<%=request.getContextPath() %>/resources/upload/${imgList[0]}" width="260px" height="260px"
+					             class="<c:if test='${p.product_status == "판매완료"}'>sold-out</c:if>"> ****************************** 해당 부분 == "판매완료"로 수정**********************************
+					        
+					        <c:choose>
+					            <c:when test="${p.product_status == '판매완료'}">
+					                <div class="status-overlay sold-text">판매완료</div>
