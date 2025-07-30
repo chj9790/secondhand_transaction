@@ -1,0 +1,400 @@
+//TransacationController.java
+
+@PostMapping("/chat/markAsRead")
+    @ResponseBody
+    public String markMessagesAsRead(@RequestParam String userId,
+                                     @RequestParam String opponentId,
+                                     @RequestParam int productNum) {
+
+        System.out.println("[DEBUG] markMessagesAsRead 호출됨!");
+        System.out.println("userId: " + userId + ", opponentId: " + opponentId + ", productNum: " + productNum);
+
+        Map<String, Object> param = new HashMap<>();
+        param.put("user_id", userId);
+        param.put("opponent_id", opponentId);
+        param.put("product_num", productNum);
+
+        this.mapper.markMessagesAsRead(param);
+
+        return "success";
+        
+    }
+
+-------------------------------------------------
+
+//TransactionMapper.java
+
+void markMessagesAsRead(Map<String, Object> param);
+
+-------------------------------------------------
+
+//ChatServer.java
+
+package com.boot.transaction.websocket;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.boot.transaction.model.ChatMessageDTO;
+import com.boot.transaction.model.TransactionMapper;
+
+import jakarta.websocket.*;
+import jakarta.websocket.server.PathParam;
+import jakarta.websocket.server.ServerEndpoint;
+
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.ContextLoader;
+import org.springframework.web.context.WebApplicationContext;
+
+@Component
+@ServerEndpoint("/chat/{userId}")
+public class ChatServer {
+
+	@Autowired
+	private TransactionMapper mapper;  // MyBatis Mapper 연결
+
+	private static Map<String, Session> userSessions = new ConcurrentHashMap<>();
+	
+    private static Map<String, Session> clients = new ConcurrentHashMap<>();
+
+    private TransactionMapper getMapper() {
+        ApplicationContext context = ApplicationContextProvider.getApplicationContext();
+        if (context != null) {
+            return context.getBean(TransactionMapper.class);
+        }
+        return null;
+    }
+
+    @OnOpen
+    public void onOpen(Session session, @PathParam("userId") String userId) {
+        System.out.println("WebSocket opened: " + session.getId() + ", userId: " + userId);
+        clients.put(userId, session);
+        userSessions.put(userId, session);
+    }
+    
+    
+
+    @OnMessage
+    public void onMessage(String message, Session session, @PathParam("userId") String userId) {
+        try {
+            JSONObject obj = new JSONObject(message);
+            String type = obj.optString("type", "chat");  // 기본값 'chat'
+
+            if ("chat".equals(type)) {
+                String from = obj.getString("from");
+                String to = obj.getString("to");
+                String msg = obj.getString("message");
+                int productNum = obj.getInt("product_num");
+
+                System.out.println("Message from " + from + " to " + to + ": " + msg);
+
+                // 메시지 DB 저장
+                ChatMessageDTO cdto = new ChatMessageDTO();
+                cdto.setFrom_user(from);
+                cdto.setTo_user(to);
+                cdto.setMessage(msg);
+                cdto.setProduct_num(productNum);
+
+                TransactionMapper mapper = getMapper();
+                if (mapper != null) {
+                    mapper.sendMessage(cdto);
+                } else {
+                    System.err.println("TransactionMapper bean을 가져올 수 없습니다.");
+                }
+
+                // 상대방에게 메시지 전송 (웹소켓)
+                Session toSession = clients.get(to);
+                if (toSession != null && toSession.isOpen()) {
+                    JSONObject response = new JSONObject();
+                    response.put("from", from);
+                    response.put("message", msg);
+                    response.put("product_num", productNum);
+
+                    toSession.getBasicRemote().sendText(response.toString());
+                }
+
+            } else if ("read".equals(type)) {
+                // 읽음 처리 요청이 들어왔을 때
+                String opponentId = obj.getString("opponentId");
+                int productNum = obj.getInt("productNum");
+
+                markAsRead(userId, opponentId, productNum);  // 읽음 처리 메서드 호출
+            } else {
+                System.out.println("알 수 없는 메시지 타입: " + type);
+            }
+
+        } catch (Exception e) {
+            System.err.println("메시지 처리 중 예외 발생: " + message);
+            e.printStackTrace();
+        }
+    }
+
+
+    @OnClose
+    public void onClose(Session session, @PathParam("userId") String userId) {
+        System.out.println("WebSocket closed: " + session.getId() + ", userId: " + userId);
+        clients.remove(userId);
+    }
+    
+    public void markAsRead(String userId, String opponentId, int productNum) {
+        Map<String, Object> param = new HashMap<>();
+        param.put("userId", userId);
+        param.put("opponentId", opponentId);
+        param.put("productNum", productNum);
+
+        TransactionMapper mapper = getMapper(); 
+        mapper.markMessagesAsRead(param);  // DB 읽음처리 수행
+
+        // 상대방에게 읽음 알림 전송
+        Session opponentSession = userSessions.get(opponentId);
+        if (opponentSession != null && opponentSession.isOpen()) {
+            JSONObject readAck = new JSONObject();
+            readAck.put("type", "read_ack");
+            readAck.put("from", userId);
+            readAck.put("product_num", productNum);
+
+            opponentSession.getAsyncRemote().sendText(readAck.toString());
+        }
+    }
+}
+
+-----------------------------------------
+
+//transaction.xml
+
+<update id="markMessagesAsRead" parameterType="map">
+    update transaction_chat_messages
+    set is_read = 1
+    where to_user = #{userId}
+    and from_user = #{opponentId}
+    and product_num = #{productNum}
+    and is_read = 0
+</update>
+    
+<select id="getUnreadMessages" parameterType="map" resultType="Chat">
+    select * from transaction_chat_messages
+    where to_user = #{userId} and product_num = #{productNum} and is_read = 0
+</select>
+
+---------------------------------------
+
+//product_detail.jsp
+
+function openChatModal(seller_id, buyer_id, product_num) {
+	    
+document.getElementById("chat_seller_id").innerText = seller_id;
+document.getElementById("chat_modal").style.display = "block";
+
+function formatDateTime(dateStr) {
+    const date = new Date(dateStr);
+    const yyyy = date.getFullYear();
+    const MM = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const HH = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return yyyy + "-" + MM + "-" + dd + " " + HH + ":" + mm;
+}
+	    
+	     $.ajax({
+    	        url: "/chat/history",
+    	        method: "GET",
+    	        data: {
+ 	        buyer_id: buyer_id,
+    	        seller_id: seller_id,
+    	        product_num: product_num
+	        },
+	        success: function(messages) {
+	            const chatWindow = document.getElementById("chat_window");
+	            chatWindow.innerHTML = "";
+	            messages.forEach(function(msg) {
+	                const isMe = msg.from_user === buyer_id;
+	                const formattedTime = formatDateTime(msg.sent_time);
+
+	                let messageHtml = "<div class='chat-msg " + (isMe ? "me" : "other") + "'>";
+	                messageHtml += "<div>" + (isMe ? "" : "<b>" + msg.from_user + ":</b> ") + msg.message + "</div>";
+	                messageHtml += "<div class='chat-meta'>" + formattedTime;
+	                if (isMe && msg.is_read == 1) {
+	                    messageHtml += " · 읽음";
+	                }
+	                messageHtml += "</div></div>";
+
+	                chatWindow.innerHTML += messageHtml;
+	            });
+	            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+	            // 여기서 읽음 처리 요청을 WebSocket으로 전송
+	            if (socket && socket.readyState === WebSocket.OPEN) {
+	                const readPayload = {
+	                    type: "read",
+	                    opponentId: seller_id,
+	                    productNum: product_num
+	                };
+	                socket.send(JSON.stringify(readPayload));
+	            }
+	        }
+	    });
+
+	    // WebSocket 연결 유지 (기존 코드)
+	    if (!socket || socket.readyState !== WebSocket.OPEN) {
+	        socket = new WebSocket("ws://localhost:8282/chat/" + buyer_id);
+
+	        socket.onopen = () => {
+	            console.log("Connected to chat server.");
+	        };
+
+	        socket.onmessage = (event) => {
+	            const data = JSON.parse(event.data);
+
+	            if (data.type === "chat") {
+	                const chatWindow = document.getElementById("chat_window");
+	                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+	                chatWindow.innerHTML += "<div class='chat-msg other'><div><b>"+data.from+":</b> "+data.message+"</div><div class='chat-meta'>"+now+"</div></div>";
+	                chatWindow.scrollTop = chatWindow.scrollHeight;
+	            } else if (data.type === "read_ack") {
+	                // 읽음 알림 도착 시 내 메시지에 '읽음' 붙이기
+	                $('#chat_window .chat-msg.me .chat-meta').each(function() {
+	                    if (!$(this).text().includes('읽음')) {
+	                        $(this).append(' · 읽음');
+	                    }
+	                });
+	            }
+	        };
+
+	        socket.onerror = (error) => console.error("WebSocket error:", error);
+	    }
+
+-------------------------------------------
+
+//user_my_chat.jsp
+
+      <script>
+        let socket;
+
+        function openChatModal(seller_id, buyer_id, product_num) {
+            document.getElementById("chat_buyer_id").innerText = buyer_id;
+            document.getElementById("chat_modal").style.display = "block";
+
+            function formatDateTime(dateStr) {
+                const date = new Date(dateStr);
+                const yyyy = date.getFullYear();
+                const MM = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                const HH = String(date.getHours()).padStart(2, '0');
+                const mm = String(date.getMinutes()).padStart(2, '0');
+                return yyyy + "-" + MM + "-" + dd + " " + HH + ":" + mm;
+            }
+
+            $.ajax({
+                url: "/chat/history",
+                method: "GET",
+                data: {
+                    buyer_id: buyer_id,
+                    seller_id: seller_id,
+                    product_num: product_num
+                },
+                success: function(messages) {
+                    const chatWindow = document.getElementById("chat_window");
+                    chatWindow.innerHTML = "";
+                    messages.forEach(function(msg) {
+                        const isMe = msg.from_user === seller_id;
+                        const formattedTime = formatDateTime(msg.sent_time);
+
+                        let messageHtml = "<div class='chat-msg " + (isMe ? "me" : "other") + "'>";
+    	                messageHtml += "<div>" + (isMe ? "" : "<b>" + msg.from_user + ":</b> ") + msg.message + "</div>";
+    	                messageHtml += "<div class='chat-meta'>" + formattedTime;
+    	                if (isMe && msg.is_read == 1) {
+    	                    messageHtml += " · 읽음";
+    	                }
+    	                messageHtml += "</div></div>";
+                        
+                        chatWindow.innerHTML += messageHtml;
+                    });
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                    
+                 	// 여기서 읽음 처리 요청을 WebSocket으로 전송
+    	            if (socket && socket.readyState === WebSocket.OPEN) {
+    	                const readPayload = {
+    	                    type: "read",
+    	                    opponentId: buyer_id,
+    	                    productNum: product_num
+    	                };
+    	                socket.send(JSON.stringify(readPayload));
+    	            }
+                }
+            });
+
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+	            socket = new WebSocket("ws://localhost:8282/chat/" + seller_id);
+	
+	            socket.onmessage = (event) => {
+	                const data = JSON.parse(event.data);
+	                
+	                if (data.type === "chat") {
+	                	const chatWindow = document.getElementById("chat_window");
+		                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+		                chatWindow.innerHTML += "<div class='chat-msg other'><div><b>" + data.from + ":</b> " + data.message + "</div><div class='chat-meta'>" + now + "</div></div>";
+		                chatWindow.scrollTop = chatWindow.scrollHeight;	
+	                } else if (data.type === "read_ack") {
+		                // 읽음 알림 도착 시 내 메시지에 읽음 붙이기
+		                $('#chat_window .chat-msg.me .chat-meta').each(function() {
+		                    if (!$(this).text().includes('읽음')) {
+		                        $(this).append(' · 읽음');
+		                    }
+		                });
+		            }
+	                
+	            };
+	
+        	}
+            
+            document.getElementById('send_btn').onclick = () => {
+                const input = document.getElementById('chat_input');
+                const message = input.value;
+                if (message && socket && socket.readyState === WebSocket.OPEN) {
+                    const payload = {
+                        type: "chat",
+                        from: seller_id,
+                        to: buyer_id,
+                        message: message,
+                        product_num: product_num
+                    };
+                    socket.send(JSON.stringify(payload));
+
+                    const chatWindow = document.getElementById("chat_window");
+                    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    chatWindow.innerHTML += "<div class='chat-msg me'><div>" + message + "</div><div class='chat-meta'>" + now + "</div></div>";
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+                    input.value = "";
+                }
+            };
+            
+            document.getElementById("chat_input").addEventListener("keydown", function(event) {
+                if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    document.getElementById("send_btn").click();
+                }
+            });
+        }
+
+        function closeChatModal() {
+            document.getElementById("chat_modal").style.display = "none";
+            if (socket) {
+                socket.close();
+                socket = null;
+            }
+        }
+
+        $(document).on("click", ".chat-btn", function() {
+            const buyer_id = $(this).data("buyerId");
+            const seller_id = $(this).data("sellerId");
+            const product_num = $(this).data("productNum");
+            openChatModal(seller_id, buyer_id, product_num);
+        });
+    </script>
