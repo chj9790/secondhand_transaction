@@ -83,3 +83,17 @@ public class TransactionController {
 
  	    return "product_search_list";
  	}
+
+
+
+
+// 위치 관련 컨트롤
+    
+    
+    @GetMapping("/region/search")
+    @ResponseBody
+    public List<RegionCodeDTO> searchByAddress(@RequestParam ("address") String address	) {
+        return mapper.findRegionsByAddress(address);
+    }
+    
+    
