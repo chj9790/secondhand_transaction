@@ -248,80 +248,6 @@ button:hover {
 }
 </style>
 
-<head>
-    <title>상품 상세</title>
-</head>
-<body>
-
-<jsp:include page="include/header.jsp" />
-
-<div class="product-container">
-    <img class="product-img" src="<%=request.getContextPath() %>resources/upload/${fn:split(product.product_img, ',')[0]}" alt="상품 이미지">
-    <div class="product-info">
-        <h2>${product.product_name}</h2>
-        <p><b>가격 :</b> 
-            <c:choose>
-                <c:when test="${product.sales_price == 0}">무료나눔</c:when>
-                <c:otherwise><fmt:formatNumber value="${product.sales_price}"/> 원</c:otherwise>
-            </c:choose>
-        </p>
-        <p><b>지역 :</b> ${product.sales_area}</p>
-        <p><b>등록일 :</b> <fmt:formatDate value="${product.product_date}" pattern="yyyy-MM-dd"/></p>
-        <p><b>판매자 :</b> ${product.user_id}</p>
-        <p><b>조회수 :</b> ${product.product_hits}</p>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <div class="chat-btn">
-                <button type="button" id="chat_btn" data-seller-id="${product.user_id}" data-buyer-id="${sessionScope.user.user_id }" data-product-num="${product.product_num}">채팅</button>
-            </div>
-            <div class="report-btn">
-                <button type="button" id="report_btn" data-reported-user-id="${product.user_id}" data-reporter-id="${sessionScope.user.user_id }" data-product-num="${product.product_num}">🚨신고하기</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<h3 class="comment-title">댓글</h3>
-<form id="commentForm">
-    <textarea id="comment_content" name="comment_content" rows="3" maxlength="200" placeholder="댓글을 입력하세요."></textarea>
-    <button type="button" id="addCommentBtn" data-product-num="${product.product_num }" data-user-id="${sessionScope.user.user_id }">댓글 등록</button>
-</form>
-
-<div id="commentList"></div>
-
-<jsp:include page="include/footer.jsp" />
-
-<!-- 채팅 모달 -->
-<div id="chat_modal" style="display:none;">
-    <div id="chat_room">
-        <div class="close_btn" onclick="closeChatModal()">&times;</div>
-        <p id="chat_header"><b>상대방:</b> <span id="chat_seller_id"></span></p>
-        <div id="chat_window" style="height:200px; overflow:auto; border:1px solid #ccc; padding:10px; margin-bottom:10px;"></div>
-        <input type="text" id="chat_input" placeholder="메시지를 입력하세요" style="width:85%;">
-        <button id="send_btn">보내기</button>
-    </div>
-</div>
-
-<!-- 신고 모달 -->
-<div id="report_modal" style="display:none;">
-    <div id="report_table">
-        <div class="close_btn" onclick="closeReportModal()">&times;</div>
-        <div>
-            <label><input type="radio" name="report_reason" value="광고/홍보 목적의 게시글" checked> 광고/홍보 목적의 게시글</label><br>
-            <label><input type="radio" name="report_reason" value="불법 또는 위조 상품 판매"> 불법 또는 위조 상품 판매</label><br>
-            <label><input type="radio" name="report_reason" value="허위 또는 오해의 소지가 있는 정보"> 허위 또는 오해의 소지가 있는 정보</label><br>
-            <label><input type="radio" name="report_reason" value="사기 또는 부정 거래 의심"> 사기 또는 부정 거래 의심</label><br>
-            <label><input type="radio" name="report_reason" value="욕설, 혐오 등 부적절한 내용 포함"> 욕설, 혐오 등 부적절한 내용 포함</label><br>
-            <label><input type="radio" name="report_reason" value="other_reason"> 기타 사유(직접 작성)</label>
-        </div>
-        <div id="report_reason" style="display:none; margin-top: 10px;">
-            <textarea id="report_reason_text" rows="3" maxlength="100" placeholder="신고 사유를 입력하세요. (최대 100자)"></textarea>
-        </div>
-        <br>
-        <div align="center">
-		    <button type="button" id="report_btn">🚨신고하기</button>
-		</div>
-    </div>
-</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="text/javascript">
@@ -604,7 +530,7 @@ button:hover {
 			}
 		});
 		
-		$('#report_table #report_btn').off('click').on('click', function() {
+		$('#report_table #submit_report_btn').off('click').on('click', function() {
 	    	const selectedReason = $('input[name="report_reason"]:checked').val();
 	    	let finalReason = selectedReason;
 
@@ -658,6 +584,80 @@ button:hover {
 	
 </script>
 
-</body>
+<head>
+    <title>상품 상세</title>
+</head>
+<body>
+	<jsp:include page="include/header.jsp" />
 
+	<!-- 상품 정보 -->
+	<input type="hidden" id="product_num" value="${product.product_num}">
+	<c:set var="imgList" value="${fn:split(product.product_img, ',')}" />
+	
+	<div class="product-container">
+	    <img class="product-img" src="<%=request.getContextPath() %>resources/upload/${imgList[0]}" alt="상품 이미지">
+	    <div class="product-info">
+	        <h2>${product.product_name}</h2>
+	        <p><b>가격 :</b>
+	            <c:choose>
+	                <c:when test="${product.sales_price == 0}">무료나눔</c:when>
+	                <c:otherwise><fmt:formatNumber value="${product.sales_price}"/> 원</c:otherwise>
+	            </c:choose>
+	        </p>
+	        <p><b>지역 :</b> ${product.sales_area}</p>
+	        <p><b>등록일 :</b> <fmt:formatDate value="${product.product_date}" pattern="yyyy-MM-dd"/></p>
+	        <p><b>판매자 :</b> ${product.user_id}</p>
+	        <p><b>조회수 :</b> ${product.product_hits}</p>
+	
+	        <div style="display:flex; gap:10px; margin-top:10px;">
+	            <button type="button" id="chat_btn" data-seller-id="${product.user_id}" data-buyer-id="${sessionScope.user.user_id}" data-product-num="${product.product_num}">채팅</button>
+	            <button type="button" id="report_btn" data-reported-user-id="${product.user_id}" data-reporter-id="${sessionScope.user.user_id}" data-product-num="${product.product_num}">🚨신고하기</button>
+	        </div>
+	    </div>
+	</div>
+	
+	<!-- 댓글 -->
+	<h3 class="comment-title">댓글</h3>
+	<form id="commentForm">
+	    <textarea id="comment_content" name="comment_content" rows="3" maxlength="200" placeholder="댓글을 입력하세요."></textarea>
+	    <button type="button" id="addCommentBtn" data-product-num="${product.product_num}" data-user-id="${sessionScope.user.user_id}">댓글 등록</button>
+	</form>
+	<div id="commentList"></div>
+	
+	<jsp:include page="include/footer.jsp" />
+	
+	<!-- 채팅 모달 -->
+	<div id="chat_modal" style="display:none;">
+	    <div id="chat_room">
+	        <div class="close_btn" onclick="closeChatModal()">&times;</div>
+	        <p id="chat_header"><b>상대방:</b> <span id="chat_seller_id"></span></p>
+	        <div id="chat_window" style="height:200px; overflow:auto; border:1px solid #ccc; padding:10px; margin-bottom:10px;"></div>
+	        <input type="text" id="chat_input" placeholder="메시지를 입력하세요" style="width:85%;">
+	        <button id="send_btn">보내기</button>
+	    </div>
+	</div>
+	
+	<!-- 신고 모달 -->
+	<div id="report_modal" style="display:none;">
+	    <div id="report_table">
+	        <div class="close_btn" onclick="closeReportModal()">&times;</div>
+	        <div>
+	            <label><input type="radio" name="report_reason" value="광고/홍보 목적의 게시글" checked> 광고/홍보 목적의 게시글</label><br>
+	            <label><input type="radio" name="report_reason" value="불법 또는 위조 상품 판매"> 불법 또는 위조 상품 판매</label><br>
+	            <label><input type="radio" name="report_reason" value="허위 또는 오해의 소지가 있는 정보"> 허위 또는 오해의 소지가 있는 정보</label><br>
+	            <label><input type="radio" name="report_reason" value="사기 또는 부정 거래 의심"> 사기 또는 부정 거래 의심</label><br>
+	            <label><input type="radio" name="report_reason" value="욕설, 혐오 등 부적절한 내용 포함"> 욕설, 혐오 등 부적절한 내용 포함</label><br>
+	            <label><input type="radio" name="report_reason" value="other_reason"> 기타 사유(직접 작성)</label>
+	        </div>
+	        <div id="report_reason" style="display:none; margin-top: 10px;">
+	            <textarea id="report_reason_text" rows="3" maxlength="100" placeholder="신고 사유를 입력하세요. (최대 100자)"></textarea>
+	        </div>
+	        <br>
+	        <div align="center">
+	            <button type="button" id="submit_report_btn">🚨신고하기</button>
+	        </div>
+	    </div>
+	</div>
+
+</body>
 </html>
