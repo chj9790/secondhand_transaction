@@ -1,0 +1,50 @@
+# mapper interface add
+
+int deleteUser(String user_id);
+
+# transaction.xml add
+
+<delete id="deleteUser" parameterType="string">
+	    delete from transaction_user where user_id = #{user_id}
+	</delete>
+
+ # controller add
+
+ @GetMapping("/user_my_delete.go")
+	 public String showDeletePage() {
+	     return "user_my_delete";
+	 }
+	 
+	 @PostMapping("/user_my_delete_ok.go")
+	 public void userDelete(HttpSession session, HttpServletResponse response) throws IOException {
+	     response.setContentType("text/html; charset=UTF-8");
+	     PrintWriter out = response.getWriter();
+
+	     String userId = (String) session.getAttribute("user_id");
+
+	     if (userId == null) {
+	         out.println("<script>");
+	         out.println("alert('로그인이 필요합니다.');");
+	         out.println("location.href='/login.go';");
+	         out.println("</script>");
+	         out.close();
+	         return;
+	     }
+
+	     int result = mapper.deleteUser(userId);
+
+	     if (result > 0) {
+	         session.invalidate();
+	         out.println("<script>");
+	         out.println("alert('회원 탈퇴가 완료되었습니다.');");
+	         out.println("location.href='/';");
+	         out.println("</script>");
+	     } else {
+	         out.println("<script>");
+	         out.println("alert('회원 탈퇴에 실패했습니다. 다시 시도해주세요.');");
+	         out.println("history.back();");
+	         out.println("</script>");
+	     }
+
+	     out.close();
+	 }
