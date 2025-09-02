@@ -1,0 +1,21 @@
+@GetMapping("/user_my_delete.go")
+	 @ResponseStatus
+	 public String showDeletePage(HttpSession session, HttpServletResponse response) throws IOException {
+	     
+	     String loggedInUserId = (String) session.getAttribute("user_id");
+
+	     if (loggedInUserId == null) {        
+	         response.setContentType("text/html; charset=UTF-8");
+	         PrintWriter out = response.getWriter();
+	         out.println("<script>");
+	         out.println("alert('로그인 후 이용해 주세요.');");
+	         out.println("location.href='/';");  
+	         out.println("</script>");
+	         return null;  
+	     }
+
+	     UserDTO user = this.mapper.findId(loggedInUserId);
+	     session.setAttribute("user", user);  
+
+	     return "user_my_delete";
+	 }
