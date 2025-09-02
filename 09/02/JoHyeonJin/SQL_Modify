@@ -1,0 +1,5 @@
+ALTER TABLE transaction_product MODIFY category_code VARCHAR2(10) null;
+ALTER TABLE transaction_category MODIFY category_code VARCHAR2(10) null;
+
+## 기존 10번 카테고리 삭제 후 ##
+INSERT INTO transaction_category (category_num, category_code, category_name) VALUES (10, null, '기타 전자제품');
