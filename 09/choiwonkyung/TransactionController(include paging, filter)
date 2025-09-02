@@ -1,0 +1,78 @@
+@GetMapping("/")
+	public String main(@RequestParam(value = "page", defaultValue = "1") int page,
+			@RequestParam(value = "category_code", required = false) String categoryCode,
+			Model model) {
+	
+		totalRecord = this.mapper.products_count();
+				
+		PageDTO pdto = new PageDTO(page, rowsize, totalRecord);
+	
+		List<ProductDTO> productlist;
+		
+	    if(categoryCode == null || categoryCode.isEmpty()) {
+	        productlist = mapper.product_list(pdto);  // 전체 제품
+	    } else {
+	        productlist = mapper.product_list_by_category(categoryCode);  // 카테고리별 제품
+	    }	
+		
+		List<CategoryDTO> category = mapper.category_list();
+		
+		model.addAttribute("productList", productlist)
+			.addAttribute("areas", areas)
+			.addAttribute("paging", pdto)	
+			.addAttribute("category", category)
+			.addAttribute("selectedCategory", categoryCode);
+		
+		return "main";
+		
+	}
+ 	
+ 	@GetMapping("secondhand_list.go")
+ 	public String secondhandList(
+ 	        @RequestParam(value = "area", required = false) String area,
+ 	        @RequestParam(value = "category", required = false) String category,
+ 	        @RequestParam(value = "keyword", required = false) String keyword,
+ 	        @RequestParam(value = "minPrice", required = false) Integer minPrice,
+ 	        @RequestParam(value = "maxPrice", required = false) Integer maxPrice,
+ 	        @RequestParam(value = "page", defaultValue = "1") int page,
+ 	        Model model
+ 	) {
+ 	    // 기본 지역 리스트
+ 	    List<String> areasToShow = this.areas;  
+
+ 	    // 선택된 지역
+ 	    String selectedArea = area;
+
+ 	    // 필터링 조건 map
+ 	    Map<String, Object> filterMap = new HashMap<>();
+ 	    filterMap.put("area", selectedArea);  // 쿼리 XML에서 #{area}와 매핑
+ 	    filterMap.put("category", category);
+ 	    filterMap.put("keyword", keyword);
+ 	    filterMap.put("minPrice", minPrice);
+ 	    filterMap.put("maxPrice", maxPrice);
+
+ 	    // 총 레코드 수
+ 	    int totalRecord = mapper.products_search_count(filterMap);
+
+ 	    // PageDTO 생성 (페이징 + 필터 조건 유지)
+ 	    PageDTO pdto = new PageDTO(page, rowsize, totalRecord, selectedArea, category, keyword, minPrice, maxPrice);
+
+ 	    // 필터 조건 적용한 상품 리스트
+ 	    List<ProductDTO> productList = mapper.products_search_list(pdto);
+
+ 	    // 카테고리 리스트
+ 	    List<CategoryDTO> categorylist = mapper.category_list();
+
+ 	    // 모델에 데이터 바인딩
+ 	    model.addAttribute("areas", areasToShow);
+ 	    model.addAttribute("area", selectedArea);
+ 	    model.addAttribute("productList", productList);
+ 	    model.addAttribute("categorylist", categorylist);
+ 	    model.addAttribute("category", category);
+ 	    model.addAttribute("paging", pdto);
+ 	    model.addAttribute("minPrice", minPrice);
+ 	    model.addAttribute("maxPrice", maxPrice);
+ 	    model.addAttribute("keyword", keyword);
+
+ 	    return "product_search_list";
+ 	}
