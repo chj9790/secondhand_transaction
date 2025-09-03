@@ -1,0 +1,13 @@
+CREATE SEQUENCE  "WEB"."PRODUCT_COMMENT_SEQ"  MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 11 NOCACHE  NOORDER  NOCYCLE ;
+
+####
+
+
+create or replace TRIGGER trg_product_comment_id
+BEFORE INSERT ON product_comment
+FOR EACH ROW
+BEGIN
+    IF :new.comment_id IS NULL THEN
+        SELECT product_comment_seq.nextval INTO :new.comment_id FROM dual;
+    END IF;
+END;
