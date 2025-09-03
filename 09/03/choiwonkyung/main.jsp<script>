@@ -1,0 +1,222 @@
+<script>
+  // 위치 가져오기 (기존 getUserLocation 함수)
+  
+  
+  
+  
+  
+  function getUserLocation() {
+    return new Promise((resolve, reject) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve({lat: pos.coords.latitude, lng: pos.coords.longitude}),
+          err => reject(err),
+          {enableHighAccuracy:true, timeout:5000}
+        );
+      } else {
+        reject(new Error("브라우저가 위치 정보를 지원하지 않습니다."));
+      }
+    });
+  }
+
+  // 구글 지오코딩으로 동(면,리) 목록 가져오기 (기존 fetchDongListByCoords 함수)
+  async function fetchDongListByCoords(lat, lng) {
+    const geocoder = new google.maps.Geocoder();
+    return new Promise((resolve, reject) => {
+      geocoder.geocode({location: {lat, lng}}, (results, status) => {
+        if (status === "OK" && results.length > 0) {
+          let guName = null;
+          for(let r of results) {
+            const guMatch = r.formatted_address.match(/([가-힣]+(구|군))/);
+            if(guMatch){
+              guName = guMatch[1];
+              break;
+            }
+          }
+          if(!guName){
+            reject("구(군) 이름을 찾을 수 없습니다.");
+            return;
+          }
+          // 서버 API 주소 맞게 변경 필요
+          fetch('/region/search?address=' + encodeURIComponent(guName))
+            .then(res => res.json())
+            .then(data => {
+              const dongNames = data
+                .map(item => {
+                  const match = item.name.match(/([가-힣]+(동|면|리))$/);
+                  return match ? match[1] : null;
+                })
+                .filter(name => name !== null);
+              resolve(dongNames);
+            })
+            .catch(e => reject(e));
+        } else {
+          reject("지오코딩 실패: " + status);
+        }
+      });
+    });
+  }
+  
+  const selectedArea = "<c:out value='${area}' default='' />";
+  const selectedCategory = "<c:out value='${param.category}' default='' />";
+  
+  
+
+ 
+  document.addEventListener('DOMContentLoaded', () => {
+      const areaRadioList = document.getElementById('area-radios');
+      const filterForm = document.getElementById('filterForm');
+      const productListContainer = document.querySelector('.product-list');
+      const paginationWrapper = document.querySelector('.pagination-wrapper');
+      const productCount = document.querySelector('.product-count');
+
+      const btnShow = document.getElementById('btnUseMyLocation');
+      const btnHide = document.getElementById('btnHideMyLocation');
+
+      let selectedArea = "<c:out value='${param.area}' default='' />";
+      let radioVisible = false; // 라디오 숨김 상태
+
+      // 라디오 버튼 갱신
+      function updateAreaRadios(areaList) {
+          areaRadioList.innerHTML = '';
+
+          // 전체보기 라디오
+          const labelAll = document.createElement('label');
+          const inputAll = document.createElement('input');
+          inputAll.type='radio'; inputAll.name='area'; inputAll.value='';
+          inputAll.checked=!selectedArea;
+          inputAll.addEventListener('change', ()=>{ selectedArea=''; triggerFilter(); });
+          labelAll.appendChild(inputAll);
+          labelAll.appendChild(document.createTextNode(' 전체보기'));
+          areaRadioList.appendChild(labelAll);
+
+          // 동/리 리스트 라디오
+          areaList.forEach(area=>{
+              const label = document.createElement('label');
+              const input = document.createElement('input');
+              input.type='radio'; input.name='area'; input.value=area;
+              input.checked=(area===selectedArea);
+              input.addEventListener('change', ()=>{ selectedArea=area; triggerFilter(); });
+              label.appendChild(input);
+              label.appendChild(document.createTextNode(' '+area));
+              areaRadioList.appendChild(label);
+          });
+      }
+
+      // Ajax 상품 리스트 갱신
+      async function fetchProductList(params) {
+          const query = new URLSearchParams(params).toString();
+          const resp = await fetch('secondhand_list.go?' + query);
+          const html = await resp.text();
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = html;
+
+          const newList = tempDiv.querySelector('.product-list');
+          if(newList) productListContainer.innerHTML = newList.innerHTML;
+
+          const newPagination = tempDiv.querySelector('.pagination-wrapper');
+          if(newPagination) paginationWrapper.innerHTML = newPagination.innerHTML;
+
+          const newCount = tempDiv.querySelector('.product-count');
+          if(newCount) productCount.innerHTML = newCount.innerHTML;
+      }
+
+      // 필터 적용
+      function triggerFilter() {
+          const params = {
+              area: selectedArea,
+              category: filterForm.querySelector('input[name="category"]:checked')?.value || '',
+              minPrice: filterForm.querySelector('input[name="minPrice"]').value,
+              maxPrice: filterForm.querySelector('input[name="maxPrice"]').value,
+              keyword: filterForm.querySelector('input[name="keyword"]')?.value || ''
+          };
+          fetchProductList(params);
+      }
+
+      // ===== 우리동네보기 / 숨기기 버튼 =====
+      async function showMyLocation() {
+          try {
+              const pos = await new Promise((res, rej) => {
+                  navigator.geolocation.getCurrentPosition(
+                      p => res({lat: p.coords.latitude, lng: p.coords.longitude}),
+                      err => rej(err)
+                  );
+              });
+
+              const dongList = await fetchDongListByCoords(pos.lat, pos.lng); // 기존 fetchDongListByCoords 사용
+
+              selectedArea = '';
+              updateAreaRadios(dongList);
+              areaRadioList.style.display = 'block';
+              radioVisible = true;
+
+              btnShow.style.display = 'none';
+              btnHide.style.display = 'inline-block';
+
+              triggerFilter();
+          } catch(e) {
+              console.error(e);
+              alert("위치 정보를 가져오지 못했습니다.");
+          }
+      }
+
+      function hideMyLocation() {
+          selectedArea = '';
+          updateAreaRadios([]);
+          areaRadioList.style.display = 'none';
+          radioVisible = false;
+
+          btnShow.style.display = 'inline-block';
+          btnHide.style.display = 'none';
+
+          triggerFilter();
+      }
+
+      btnShow.addEventListener('click', showMyLocation);
+      btnHide.addEventListener('click', hideMyLocation);
+
+      // 초기 라디오/버튼 상태
+      if(selectedArea){
+          updateAreaRadios([selectedArea]);
+          areaRadioList.style.display = 'block';
+          radioVisible = true;
+
+          btnShow.style.display = 'none';
+          btnHide.style.display = 'inline-block';
+      } else {
+          areaRadioList.style.display = 'none';
+          radioVisible = false;
+
+          btnShow.style.display = 'inline-block';
+          btnHide.style.display = 'none';
+      }
+
+      // 카테고리, 가격, 키워드 변경 이벤트
+      filterForm.querySelectorAll('input[name="category"], input[name="minPrice"], input[name="maxPrice"]').forEach(el=>{
+          el.addEventListener('change', triggerFilter);
+      });
+      const keywordInput = filterForm.querySelector('input[name="keyword"]');
+      if(keywordInput){
+          keywordInput.addEventListener('keypress', e=>{
+              if(e.key==='Enter'){ e.preventDefault(); triggerFilter(); }
+          });
+      }
+
+      // 페이지 버튼 Ajax 적용
+      paginationWrapper.addEventListener('click', e=>{
+          if(e.target.tagName==='A'){
+              e.preventDefault();
+              const page = new URL(e.target.href, window.location.origin).searchParams.get('page');
+              const params = {
+                  page,
+                  area: document.querySelector('input[name="area"]:checked')?.value || '',
+                  category: document.querySelector('input[name="category"]:checked')?.value || '',
+                  minPrice: document.querySelector('input[name="minPrice"]').value,
+                  maxPrice: document.querySelector('input[name="maxPrice"]').value,
+                  keyword: document.querySelector('input[name="keyword"]').value || ''
+              };
+              fetchProductList(params);
+          }
+      });
+  });
+  </script>
