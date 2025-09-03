@@ -1,0 +1,32 @@
+create table transaction_report(
+    report_num number primary key,              -- 신고 아이디(번호)
+    product_num number(10),                     -- 신고된 판매글 번호
+    reporter_id varchar2(20) not null,          -- 신고자 아이디
+    reported_user_id varchar2(20) not null,     -- 신고된 아이디
+    reported_at date not null,                  -- 신고된 시간
+    report_reason varchar2(100) not null,       -- 신고 사유
+    constraint product_num_fk foreign key(product_num) 
+        references transaction_product(product_num) on delete set null
+);
+
+
+-- 시퀀스
+CREATE SEQUENCE seq_transaction_report
+    START WITH 1
+    INCREMENT BY 1
+    NOCACHE
+    NOCYCLE;
+
+-- 트리거
+CREATE OR REPLACE TRIGGER trg_transaction_report_bi
+BEFORE INSERT ON transaction_report
+FOR EACH ROW
+BEGIN
+    IF :NEW.report_num IS NULL THEN
+        SELECT seq_transaction_report.NEXTVAL
+        INTO :NEW.report_num
+        FROM dual;
+    END IF;
+END;
+
+commit;
