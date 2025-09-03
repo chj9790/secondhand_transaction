@@ -1,0 +1,35 @@
+#### 버튼 ####
+
+<button type="button" onclick="resetCategory()"
+ style="margin-top: 10px; width: 50%; background-color: #2b7cff; color: white; border: none; padding: 5px; border-radius: 6px; cursor: pointer;">
+카테고리 초기화
+</button>
+
+
+#### 함수 ####
+
+  function resetCategory() {
+    const form = document.getElementById('filterForm');
+
+    // 모든 카테고리 라디오버튼 체크 해제
+    const radios = form.querySelectorAll('input[name="category"]');
+    radios.forEach(r => r.checked = false);
+
+    // 이미 존재하는 hidden category input 제거 (중복 방지)
+    const existingHidden = form.querySelector('input[type="hidden"][name="category"]');
+    if (existingHidden) {
+        existingHidden.remove();
+    }
+
+    // 빈 카테고리 값으로 hidden input 추가
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'category';
+    hiddenInput.value = '';
+    form.appendChild(hiddenInput);
+
+    form.submit();
+}
+
+
+#### 함수를 body 태그 아래 스크립트로 이동 ####
