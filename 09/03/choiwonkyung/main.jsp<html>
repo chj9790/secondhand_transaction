@@ -1,0 +1,21 @@
+
+      <!-- hidden 필드 -->
+      <input type="hidden" name="area" id="finalArea" />
+
+      <!-- 검색 버튼 -->
+      <div style="margin-top: 10px;">
+        <button type="button" onclick="validateAndSubmit()" 
+          style="width: 100%; background-color: #2b7cff; color: white; border: none; padding: 6px; border-radius: 6px; cursor: pointer;">
+          지역 검색
+        </button>
+      </div>
+   
+		
+		<div id="area-radios">   </div>
+
+
+		<button type="button" id="btnUseMyLocation" style="margin-top:10px; padding:5px 10px;">우리 동네 보기</button>
+		<button type="button" id="btnHideMyLocation" style="display:none; margin-top:5px; padding:5px 10px;">숨기기</button>
+
+        <hr>
+        <h3>카테고리</h3>    --  카테고리 버튼 위에 코드 없으면 추가 
