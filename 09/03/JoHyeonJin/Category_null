@@ -1,0 +1,160 @@
+############## main.html ##############
+
+## 카테고리 ##
+
+<c:forEach var="c" items="${category}">
+				    <label>
+				        <input type="radio" name="category"
+				               value="${c.category_code == null ? 'etc' : c.category_code}"
+				               onchange="this.form.submit()"
+				               <c:if test="${selectedCategory == (c.category_code == null ? 'etc' : c.category_code)}">checked</c:if>>
+				        ${c.category_name}
+				    </label>
+				</c:forEach>
+		        
+		        <!-- 카테고리 초기화 버튼 -->
+				<div style="margin-top: 10px;">
+				    <button type="submit" onclick="resetCategory()" style="margin-top: 10px; width: 50%; background-color: #2b7cff; color: white; border: none; padding: 5px; border-radius: 6px; cursor: pointer;">
+				        카테고리 초기화
+				    </button>
+				</div>
+
+
+## resetCategory() ##
+
+// 카테고리 초기화 함수
+	function resetCategory() {
+	    // 1. hidden input으로 category 초기화
+	    const radios = document.querySelectorAll('input[name="category"]');
+	    radios.forEach(r => r.checked = false);
+	
+	    // 2. form의 action 유지하면서 카테고리 값 없이 submit
+	    const form = document.getElementById('filterForm');
+	    const inputs = form.querySelectorAll('input[name="category"]');
+	
+	    inputs.forEach(input => input.remove()); // 기존 라디오 제거 (선택적)
+	
+	    // 3. 카테고리 파라미터가 완전히 빠진 상태로 전송
+	    form.submit();
+	}
+
+
+
+############## product_search_list ##############
+
+## 카테고리 ##
+
+<h3>카테고리</h3>
+		        <c:forEach var="c" items="${categorylist}">
+				    <label>
+				        <input type="radio" name="category"
+				               value="${empty c.category_code ? 'etc' : c.category_code}"
+				               onchange="this.form.submit()"
+				               <c:if test="${category == (empty c.category_code ? 'etc' : c.category_code)}">checked</c:if>>
+				        ${c.category_name}
+				    </label>
+				</c:forEach>
+		        
+		         <!-- 카테고리 초기화 버튼 -->
+			<div style="margin-top: 10px;">
+			    <button type="submit" onclick="resetCategory()"style="margin-top: 10px; width: 50%; background-color: #2b7cff; color: white; border: none; padding: 5px; border-radius: 6px; cursor: pointer;">카테고리 초기화</button>
+			</div>
+
+
+
+## resetCategory() ##
+
+//카테고리 초기화 함수
+function resetCategory() {
+    // 1. hidden input으로 category 초기화
+    const radios = document.querySelectorAll('input[name="category"]');
+    radios.forEach(r => r.checked = false);
+
+    // 2. form의 action 유지하면서 카테고리 값 없이 submit
+    const form = document.getElementById('filterForm');
+    const inputs = form.querySelectorAll('input[name="category"]');
+
+    inputs.forEach(input => input.remove()); // 기존 라디오 제거 (선택적)
+
+    // 3. 카테고리 파라미터가 완전히 빠진 상태로 전송
+    form.submit();
+}
+
+
+
+############## xml ##############
+
+## products_search_list ##
+
+<if test="category != null and category != ''">
+                <choose>
+				    <when test="category == 'etc'">
+				        AND category_code IS NULL
+				    </when>
+				    <when test="category != null and category != ''">
+				        AND category_code = #{category}
+				    </when>
+				</choose>
+            </if>
+
+
+## products_search_count ##
+
+<choose>
+	        <when test="category == 'etc'">
+	            AND category_code IS NULL
+	        </when>
+	        <when test="category != null and category != ''">
+	            AND category_code = #{category}
+	        </when>
+	    </choose>
+
+
+############## controller ##############
+
+## secondhand_list.go ##
+
+@GetMapping("secondhand_list.go")
+ 	public String secondhandList(
+ 	        @RequestParam(value = "area", required = false) String area,
+ 	        @RequestParam(value = "category", required = false) String category,
+ 	        @RequestParam(value = "keyword", required = false) String keyword,
+ 	        @RequestParam(value = "minPrice", required = false) Integer minPrice,
+ 	        @RequestParam(value = "maxPrice", required = false) Integer maxPrice,
+ 	        @RequestParam(value = "page", defaultValue = "1") int page,
+ 	        Model model
+ 	) {
+ 	    List<String> areasToShow = this.areas;
+ 	    String selectedArea = area;
+
+ 	    Map<String, Object> map = new HashMap<>();
+ 	    map.put("dong", selectedArea);
+ 	    map.put("category", category);
+ 	    map.put("keyword", keyword);
+ 	    map.put("minPrice", minPrice);
+ 	    map.put("maxPrice", maxPrice);
+
+ 	    totalRecord = mapper.products_search_count(map);
+ 	    PageDTO pdto = new PageDTO(page, rowsize, totalRecord, selectedArea, category, keyword, minPrice, maxPrice);
+ 	    List<ProductDTO> productList = mapper.products_search_list(pdto);
+ 	    List<CategoryDTO> categorylist = mapper.category_list();
+
+ 	    model.addAttribute("areas", areasToShow);
+ 	    model.addAttribute("area", selectedArea);
+ 	    model.addAttribute("productList", productList);
+ 	    model.addAttribute("categorylist", categorylist);
+ 	    model.addAttribute("category", category);
+ 	    model.addAttribute("paging", pdto);
+ 	    model.addAttribute("minPrice", minPrice);
+ 	    model.addAttribute("maxPrice", maxPrice);
+ 	    model.addAttribute("keyword", keyword);
+
+ 	    return "product_search_list";
+ 	} 
+
+
+##### 카테고리 null + 카테고리 초기화 수정 #####
+##### 카테고리 삭제 시 해당 카테고리로 설정하여 등록한 판매글은 카테고리가 삭제 되었으므로 Null 이 되어 기타 전자제품으로 넘어감 #####
+##### -> 카테고리 DB에 등록 시 기타 전자제품에 코드를 null 로 주어야 함 #####
+
+
