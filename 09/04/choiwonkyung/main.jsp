@@ -1,0 +1,913 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %> 
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>중고 전자기기 목록</title>
+<style>
+    body {
+	    font-family: 'Segoe UI', sans-serif;
+	    background-color: #f4f7fb;
+	    margin: 0;
+	    padding: 0;
+	}
+	
+	.main-container {
+	    display: flex;
+	}
+
+    .sidebar {
+        width: 15%;
+        padding: 20px;
+        background-color: #ffffff;
+        border-right: 1px solid #ddd;
+        overflow-y: auto;
+    }
+
+    .sidebar h3 {
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+
+    .sidebar label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 14px;
+    }
+
+    .content {
+        flex: 1;
+        padding: 20px;
+    }
+
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .search-bar input[type="text"] {
+        width: 250px;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .search-bar input[type="submit"] {
+        padding: 8px 16px;
+        background-color: #2b7cff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        margin-left: 8px;
+        cursor: pointer;
+    }
+
+    .product-count {
+        font-size: 15px;
+        color: #555;
+        margin-right: 10px;
+    }
+
+    .product-count strong {
+        color: #2b7cff;
+    }
+
+    .product-list { 
+	    display: flex; 
+	    flex-wrap: wrap; 
+	    gap: 20px; 
+    } 
+    
+    .product-card { 
+	    flex: 0 0 calc(20% - 20px); 
+	    background: white; 
+	    border-radius: 10px; 
+	    display: flex; 
+	    flex-direction: column; 
+	    padding: 12px; 
+	    box-shadow: 1px 2px 5px rgba(0,0,0,0.05); 
+	    transition: 0.2s ease; 
+	    box-sizing: border-box; 
+	    min-width: 200px; 
+    } 
+    
+    .product-img-wrapper {
+	    position: relative; 
+	    width: 100%; 
+	    padding-top: 100%;  /* 정사각형 비율 유지 */
+	    overflow: hidden; 
+	    border-radius: 8px; 
+	    border: 1px solid #ddd;
+	    background: #fafafa;
+    } 
+    
+    .product-img { 
+	    position: absolute; 
+	    top: 0; 
+	    left: 0; 
+	    width: 100%; 
+	    height: 100%; 
+	    object-fit: cover; 
+	    border-radius: 8px; 
+    }
+
+
+	.no-product {
+	    width: 100%;
+	    text-align: center;
+	    padding: 60px 0;
+	    font-size: 20px;
+	    font-weight: 500;
+	    color: #777;
+	}
+
+	.sold-out {
+	    opacity: 0.4;
+	    filter: grayscale(50%);
+	}
+	
+	.status-overlay {
+	    position: absolute;
+	    top: 50%;
+	    left: 50%;
+	    transform: translate(-50%, -50%);
+	    font-weight: bold;
+	    font-size: 18px;
+	    padding: 4px 12px;
+	    border-radius: 6px;
+	    background-color: rgba(255, 255, 255, 0.8);
+	}
+	
+	.sold-text {
+	    color: red;
+	}
+	
+	.reserved-text {
+	    color: green;
+	}
+
+    .product-info {
+        margin-top: 10px;
+    }
+
+    .product-info a {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2a2a2a;
+        text-decoration: none; 
+		display: block;            
+		width: 100%;               
+		white-space: nowrap;     
+		overflow: hidden;        
+		text-overflow: ellipsis;   
+    }
+
+    .product-info a:hover {
+        text-decoration: underline;
+    }
+
+    .product-meta {
+        color: #666;
+        font-size: 14px;
+        margin-top: 6px;
+		display: block;            
+		width: 100%;               
+		white-space: nowrap;     
+		overflow: hidden;        
+		text-overflow: ellipsis;   
+    }
+
+    .product-price {
+        font-weight: bold;
+        margin-top: 4px;
+        font-size: 16px;
+        color: #4e8fe1;
+    }
+
+    .settings-btn {
+        background-color: #dbe7ff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .pagination-wrapper {
+        margin: 30px 0;
+    }
+
+    .pagination {
+        display: inline-flex;
+        gap: 6px;
+        padding: 10px 20px;
+        border-radius: 12px;
+        background-color: #f2f7fd;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .page-btn {
+        display: inline-block;
+        padding: 8px 14px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #2b7cff;
+        background-color: white;
+        border: 1px solid #b3d3ff;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .page-btn:hover {
+        background-color: #dceaff;
+    }
+
+    .page-btn.active {
+        background-color: #2b7cff;
+        color: white;
+        border-color: #2b7cff;
+    }
+
+    .page-btn.first,
+    .page-btn.last {
+        font-weight: bold;
+    }
+    
+	.product-card:hover {
+	    background-color: #eef4ff;
+	    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	}
+	
+	.region-select {
+        width: 100%;
+        padding: 8px 10px;
+        margin-bottom: 12px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background: #fff;
+        font-size: 14px;
+    }
+    
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    input[type=number] {
+        -moz-appearance: textfield; /* Firefox */
+    }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  // ===== 가격 검색 최솟값 설정 =====
+  const minPriceInput = document.getElementById("minPrice");
+  const maxPriceInput = document.getElementById("maxPrice");
+
+  if (minPriceInput && maxPriceInput) {
+    minPriceInput.addEventListener("input", () => {
+      const minVal = parseFloat(minPriceInput.value) || 0;
+      maxPriceInput.min = Math.max(0, minVal);
+    });
+  }
+
+  // ===== 카테고리 초기화 함수 =====
+  function resetCategory() {
+    const form = document.forms[0];
+    if (!form) return;
+
+    const categoryInputs = form.querySelectorAll('input[name="category"]');
+    categoryInputs.forEach(input => input.checked = false);
+
+    const url = new URL(form.action, window.location.origin);
+    const params = new URLSearchParams(new FormData(form));
+    params.delete('category');
+    window.location.href = url.pathname + '?' + params.toString();
+  }
+  window.resetCategory = resetCategory;
+
+  // ===== 무료나눔 버튼 =====
+  function submitFreeShare() {
+    const form = document.forms[0];
+    if (!form) return;
+
+    const minInput = form.querySelector('input[name="minPrice"]');
+    const maxInput = form.querySelector('input[name="maxPrice"]');
+
+    if (minInput) minInput.value = "";   // 최소가격 초기화
+    if (maxInput) maxInput.value = "0";  // 무료나눔은 최대가격 0으로
+
+    form.submit();
+  }	
+  window.submitFreeShare = submitFreeShare;
+
+  // ===== Ajax 방식 지역 선택 =====
+  const topSelect = document.getElementById("topRegionSelect");
+  const midSelect = document.getElementById("midRegionSelect");
+  const subSelect = document.getElementById("subRegionSelect");
+  const detailSelect = document.getElementById("detailRegionSelect"); // 4단계
+  const form = document.getElementById("filterForm");
+
+  // JSTL -> JS 배열로 변환
+  window.areaData = [];
+  <c:forEach var="a" items="${areas}">
+    window.areaData.push("${fn:trim(a.name)}");
+  </c:forEach>
+
+  // 1단계(시/도) 채우기
+  function loadTopRegions() {
+    const tops = [...new Set(window.areaData.map(a => a.split(" ")[0]))];
+    tops.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t;
+      opt.textContent = t;
+      topSelect.appendChild(opt);
+    });
+  }
+
+  // 2단계(시/군/구) 채우기
+  function loadMidRegions(top) {
+    midSelect.innerHTML = '<option value="">-- 시/군/구 선택 --</option>';
+    subSelect.innerHTML = '<option value="">-- 읍/면/구 선택 --</option>';
+    if (detailSelect) {
+      detailSelect.innerHTML = '<option value="">-- 동/리 선택 --</option>';
+    }
+
+    const mids = [...new Set(
+      window.areaData
+        .filter(a => a.startsWith(top + " "))
+        .map(a => a.split(" ")[1])
+    )];
+
+    mids.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = top + " " + m;
+      opt.textContent = m;
+      midSelect.appendChild(opt);
+    });
+  }
+
+  // 3단계(읍/면/구) 채우기
+  function loadSubRegions(mid) {
+    subSelect.innerHTML = '<option value="">-- 읍/면/구 선택 --</option>';
+    if (detailSelect) {
+      detailSelect.innerHTML = '<option value="">-- 동/리 선택 --</option>';
+    }
+
+    const subs = [...new Set(
+      window.areaData
+        .filter(a => a.startsWith(mid + " "))
+        .map(a => a.split(" ")[2])
+    )];
+
+    subs.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = mid + " " + s;
+      opt.textContent = s;
+      subSelect.appendChild(opt);
+    });
+  }
+
+  // 4단계(동/리) 채우기
+  function loadDetailRegions(sub) {
+    if (!detailSelect) return;
+    detailSelect.innerHTML = '<option value="">-- 동/리 선택 --</option>';
+
+    const details = [...new Set(
+      window.areaData
+        .filter(a => a.startsWith(sub + " "))
+        .map(a => a.split(" ")[3])
+    )];
+
+    details.forEach(d => {
+      const opt = document.createElement("option");
+      opt.value = sub + " " + d;
+      opt.textContent = d;
+      detailSelect.appendChild(opt);
+    });
+  }
+
+  // ===== 검색 버튼 함수 =====
+  window.validateAndSubmit = function () {
+    const top = topSelect.value;
+    const mid = midSelect.value;
+    const sub = subSelect.value;
+    const detail = detailSelect ? detailSelect.value : "";
+
+    if (!top) { alert("시/도를 먼저 선택하세요."); return; }
+    if (!mid) { alert("시/군/구를 먼저 선택하세요."); return; }
+    if (!sub) { alert("읍/면/구를 선택하세요."); return; }
+
+    // 최종 선택값 (4단계 있으면 4단계, 없으면 3단계)
+    const finalAreaValue = detail ? detail : sub;
+
+    // hidden input에 값 세팅
+    document.getElementById("finalArea").value = finalAreaValue;
+
+    form.submit();
+  }
+
+  // ===== 이벤트 바인딩 =====
+  topSelect.addEventListener("change", function () {
+    if (this.value) {
+      loadMidRegions(this.value);
+    } else {
+      midSelect.innerHTML = '<option value="">-- 시/군/구 선택 --</option>';
+      subSelect.innerHTML = '<option value="">-- 읍/면/구 선택 --</option>';
+      if (detailSelect) {
+        detailSelect.innerHTML = '<option value="">-- 동/리 선택 --</option>';
+      }
+    }
+  });
+
+  midSelect.addEventListener("change", function () {
+    if (this.value) {
+      loadSubRegions(this.value);
+    } else {
+      subSelect.innerHTML = '<option value="">-- 읍/면/구 선택 --</option>';
+      if (detailSelect) {
+        detailSelect.innerHTML = '<option value="">-- 동/리 선택 --</option>';
+      }
+    }
+  });
+
+  subSelect.addEventListener("change", function () {
+    if (this.value && detailSelect) {
+      loadDetailRegions(this.value);
+    }
+  });
+
+  loadTopRegions(); // 초기 로딩
+});
+</script>
+
+</head>
+<body>
+
+<jsp:include page="include/header.jsp" />
+
+<div class="main-container">
+  <div class="sidebar">
+    <form id="filterForm" method="get" action="secondhand_list.go">
+
+      <!-- 1단계: 시/도 -->
+      <label for="topRegionSelect">시/도</label>
+      <select id="topRegionSelect" name="topRegion" class="region-select">
+        <option value="">-- 시/도 선택 --</option>
+        <c:forEach var="a" items="${areas}">
+          <c:set var="parts" value="${fn:split(fn:trim(a.name), ' ')}"/>
+          <c:if test="${fn:length(parts) == 1}">
+            <option value="${parts[0]}"
+              <c:if test="${param.topRegion == parts[0]}">selected</c:if>>
+              ${parts[0]}
+            </option>
+          </c:if>
+        </c:forEach>
+      </select>
+
+      <!-- 2단계: 시/군/구 -->
+      <label for="midRegionSelect">시/군/구</label>
+      <select id="midRegionSelect" name="midRegion" class="region-select">
+        <option value="">-- 시/군/구 선택 --</option>
+        <c:forEach var="a" items="${areas}">
+          <c:set var="parts" value="${fn:split(fn:trim(a.name), ' ')}"/>
+          <c:if test="${fn:length(parts) >= 2 and parts[0] == param.topRegion}">
+            <c:set var="mid" value="${parts[0]} ${parts[1]}"/>
+            <option value="${mid}"
+              <c:if test="${param.midRegion == mid}">selected</c:if>>
+              ${parts[1]}
+            </option>
+          </c:if>
+        </c:forEach>
+      </select>
+
+      <!-- 3단계: 읍/면/구 -->
+      <label for="subRegionSelect">읍/면/구</label>
+      <select id="subRegionSelect" name="subRegion" class="region-select">
+        <option value="">-- 읍/면/구 선택 --</option>
+        <c:forEach var="a" items="${areas}">
+          <c:set var="parts" value="${fn:split(fn:trim(a.name), ' ')}"/>
+          <c:set var="mid" value="${parts[0]} ${parts[1]}"/>
+          <c:if test="${fn:length(parts) >= 3 and mid == param.midRegion}">
+            <c:set var="sub" value="${parts[0]} ${parts[1]} ${parts[2]}"/>
+            <option value="${sub}"
+              <c:if test="${param.subRegion == sub}">selected</c:if>>
+              ${parts[2]}
+            </option>
+          </c:if>
+        </c:forEach>
+      </select>
+
+      <!-- 4단계: 동/리 -->
+      <label for="detailRegionSelect">동/리</label>
+      <select id="detailRegionSelect" class="region-select">
+        <option value="">-- 동/리 선택 --</option>
+        <c:forEach var="a" items="${areas}">
+          <c:set var="parts" value="${fn:split(fn:trim(a.name), ' ')}"/>
+          <c:set var="sub" value="${parts[0]} ${parts[1]} ${parts[2]}"/>
+          <c:if test="${fn:length(parts) >= 4 and sub == param.subRegion}">
+            <option value="${fn:trim(a.name)}"
+              <c:if test="${param.area == fn:trim(a.name)}">selected</c:if>>
+              ${parts[3]}
+            </option>
+          </c:if>
+        </c:forEach>
+      </select>
+
+
+	
+      <!-- hidden 필드 -->
+      <input type="hidden" name="area" id="finalArea" />
+
+      <!-- 검색 버튼 -->
+      <div style="margin-top: 10px;">
+        <button type="button" onclick="validateAndSubmit()" 
+          style="width: 100%; background-color: #2b7cff; color: white; border: none; padding: 6px; border-radius: 6px; cursor: pointer;">
+          지역 검색
+        </button>
+      </div>
+   	    <br> <br>
+		
+		<div id="area-radios">   </div>
+
+
+		<button type="button" id="btnUseMyLocation" style= "margin-top: 10px; width: 50%; background-color: #2b7cff; color: white; border: none; padding: 5px; border-radius: 6px; cursor: pointer;">
+		    우리 동네 보기</button>
+		<button type="button" id="btnHideMyLocation" style="display:none; margin-top: 10px; width: 50%; background-color: #2b7cff; color: white; border: none; padding: 5px; border-radius: 6px; cursor: pointer;">
+		    숨기기</button>
+			<br> <br>
+        <hr>
+        <h3>카테고리</h3>
+        <c:forEach var="c" items="${category}">
+            <label>
+                <input type="radio" name="category" value="${c.category_code}" "
+                	<c:if test="${empty selectedCategory and empty c.category_code}">checked</c:if>
+                	<c:if test="${selectedCategory == c.category_code}">checked</c:if>>
+                ${c.category_name}
+            </label>
+        </c:forEach>
+        
+        <!-- 카테고리 초기화 버튼 -->
+		<div style="margin-top: 10px;">
+		    <button type="button" onclick="resetCategory()" style="margin-top: 10px; width: 50%; background-color: #2b7cff; color: white; border: none; padding: 5px; border-radius: 6px; cursor: pointer;">
+		        카테고리 초기화
+		    </button>
+		</div>
+
+        <hr>
+        <h3>가격 범위</h3>
+		<input type="number" id="minPrice" name="minPrice" placeholder="최소가격" 
+		       value="${minPrice}" min="0" step="any"
+		       style="width: 33%; margin-bottom: 8px;" /> ~
+		
+		<input type="number" id="maxPrice" name="maxPrice" placeholder="최대가격" 
+		       value="${maxPrice}" min="0" step="any"
+		       style="width: 33%; margin-bottom: 8px;" />
+
+	    <!-- 무료나눔 버튼 -->
+		<div style="margin-top: 10px;">
+		    <button type="button" onclick="submitFreeShare()"
+		        style="width: 30%; background-color: #28a745; color: white; border: none; padding: 5px; border-radius: 6px; cursor: pointer;">
+		        무료나눔
+		    </button>
+		</div>
+
+        <input type="submit" value="가격 검색" style="margin-top: 10px; width: 50%; background-color: #2b7cff; color: white; border: none; padding: 5px; border-radius: 6px; cursor: pointer;"/>
+	    </form>
+	</div>
+	
+	<div class="content">
+	    <h1>중고 전자기기</h1>
+	
+	    <div class="top-bar">
+	        <form class="search-bar" method="get" action="secondhand_list.go">
+	            <input type="text" name="keyword" placeholder="제품명을 입력하세요">
+	            <input type="submit" value="검색">
+	        </form>
+	
+	        <div style="display: flex; align-items: center; gap: 20px;">
+	            <div class="product-count">총 <strong>${paging.totalRecord}</strong>개 상품</div>
+	        </div>
+	    </div>
+	
+	    <div class="product-list">
+	        <c:if test="${empty productList}">
+	            <div class="no-product">
+	                상품이 없습니다.
+	            </div>
+	        </c:if>
+
+	        <c:forEach var="p" items="${productList}">
+	        	<c:set var="imgList" value="${fn:split(p.product_img, ',')}" />
+	            <div class="product-card" onclick="location.href='product_detail.go?product_num=${p.product_num}'" style="cursor: pointer;">
+				    <div class="product-img-wrapper">
+				        <img src="<%=request.getContextPath() %>/resources/upload/${imgList[0]}"
+				             class="product-img <c:if test='${p.product_status == "판매완료"}'>sold-out</c:if>">
+				        
+				        <c:choose>
+				            <c:when test="${p.product_status == '판매완료'}">
+				                <div class="status-overlay sold-text">판매완료</div>
+				            </c:when>
+				            <c:when test="${p.product_status == '예약중'}">
+				                <div class="status-overlay reserved-text">예약중</div>
+				            </c:when>
+				        </c:choose>
+				    </div>
+				
+				    <div class="product-info">
+				        <a href="product_detail.go?product_num=${p.product_num}">${p.product_title}</a>
+				        <fmt:formatDate value="${p.product_date}" pattern="YYYY-MM-dd · a h:mm" var="formattedTime" />
+				        <div class="product-meta">${p.sales_area}</div>
+				        <div class="product-meta">${formattedTime}</div>
+				        <div class="product-price">
+				            <c:choose>
+				                <c:when test="${p.sales_price == 0}">
+				                    무료 나눔
+				                </c:when>
+				                <c:otherwise>
+				                    <fmt:formatNumber value="${p.sales_price}" type="number" />원
+				                </c:otherwise>
+				            </c:choose>
+				        </div>
+				    </div>
+				</div>
+	        </c:forEach>
+	    </div>
+	
+	    <br><br>
+	
+	    <div class="pagination-wrapper" align="center">
+	        <div class="pagination">
+	            <c:if test="${paging.page > paging.block}">
+	                <a href="?page=1" class="page-btn first">처음</a>
+	                <a href="?page=${paging.startBlock - 1}" class="page-btn">◀</a>
+	            </c:if>
+	
+	            <c:forEach begin="${paging.startBlock}" end="${paging.endBlock}" var="i">
+	                <c:choose>
+	                    <c:when test="${i == paging.page}">
+	                        <a href="?page=${i}" class="page-btn active">${i}</a>
+	                    </c:when>
+	                    <c:otherwise>
+	                        <a href="?page=${i}" class="page-btn">${i}</a>
+	                    </c:otherwise>
+	                </c:choose>
+	            </c:forEach>
+	
+	            <c:if test="${paging.endBlock < paging.allPage}">
+	                <a href="?page=${paging.endBlock + 1}" class="page-btn">▶</a>
+	                <a href="?page=${paging.allPage}" class="page-btn last">마지막</a>
+	            </c:if>
+	        </div>
+	    </div>
+	
+	</div>
+</div>
+
+<jsp:include page="include/footer.jsp" />
+
+	
+	<script>
+  // 위치 가져오기 (기존 getUserLocation 함수)
+  
+  function getUserLocation() {
+    return new Promise((resolve, reject) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve({lat: pos.coords.latitude, lng: pos.coords.longitude}),
+          err => reject(err),
+          {enableHighAccuracy:true, timeout:5000}
+        );
+      } else {
+        reject(new Error("브라우저가 위치 정보를 지원하지 않습니다."));
+      }
+    });
+  }
+
+  // 구글 지오코딩으로 동(면,리) 목록 가져오기 (기존 fetchDongListByCoords 함수)
+  async function fetchDongListByCoords(lat, lng) {
+    const geocoder = new google.maps.Geocoder();
+    return new Promise((resolve, reject) => {
+      geocoder.geocode({location: {lat, lng}}, (results, status) => {
+        if (status === "OK" && results.length > 0) {
+          let guName = null;
+          for(let r of results) {
+            const guMatch = r.formatted_address.match(/([가-힣]+(구|군))/);
+            if(guMatch){
+              guName = guMatch[1];
+              break;
+            }
+          }
+          if(!guName){
+            reject("구(군) 이름을 찾을 수 없습니다.");
+            return;
+          }
+          // 서버 API 주소 맞게 변경 필요
+          fetch('/region/search?address=' + encodeURIComponent(guName))
+            .then(res => res.json())
+            .then(data => {
+              const dongNames = data
+                .map(item => {
+                  const match = item.name.match(/([가-힣]+(동|면|리))$/);
+                  return match ? match[1] : null;
+                })
+                .filter(name => name !== null);
+              resolve(dongNames);
+            })
+            .catch(e => reject(e));
+        } else {
+          reject("지오코딩 실패: " + status);
+        }
+      });
+    });
+  }
+  
+  const selectedArea = "<c:out value='${area}' default='' />";
+  const selectedCategory = "<c:out value='${param.category}' default='' />";
+  
+  
+
+ 
+  document.addEventListener('DOMContentLoaded', () => {
+      const areaRadioList = document.getElementById('area-radios');
+      const filterForm = document.getElementById('filterForm');
+      const productListContainer = document.querySelector('.product-list');
+      const paginationWrapper = document.querySelector('.pagination-wrapper');
+      const productCount = document.querySelector('.product-count');
+
+      const btnShow = document.getElementById('btnUseMyLocation');
+      const btnHide = document.getElementById('btnHideMyLocation');
+
+      let selectedArea = "<c:out value='${param.area}' default='' />";
+      let radioVisible = false; // 라디오 숨김 상태
+
+      // 라디오 버튼 갱신
+      function updateAreaRadios(areaList) {
+          areaRadioList.innerHTML = '';
+
+          // 전체보기 라디오
+          const labelAll = document.createElement('label');
+          const inputAll = document.createElement('input');
+          inputAll.type='radio'; inputAll.name='area'; inputAll.value='';
+          inputAll.checked=!selectedArea;
+          inputAll.addEventListener('change', ()=>{ selectedArea=''; triggerFilter(); });
+          labelAll.appendChild(inputAll);
+          labelAll.appendChild(document.createTextNode(' 전체보기'));
+          areaRadioList.appendChild(labelAll);
+
+          // 동/리 리스트 라디오
+          areaList.forEach(area=>{
+              const label = document.createElement('label');
+              const input = document.createElement('input');
+              input.type='radio'; input.name='area'; input.value=area;
+              input.checked = (area === selectedArea);
+              input.addEventListener('change', ()=>{ selectedArea=area; triggerFilter(); });
+              label.appendChild(input);
+              label.appendChild(document.createTextNode(' '+area));
+              areaRadioList.appendChild(label);
+          });
+      }
+
+      // Ajax 상품 리스트 갱신
+      async function fetchProductList(params) {
+          const query = new URLSearchParams(params).toString();
+          const resp = await fetch('secondhand_list.go?' + query);
+          const html = await resp.text();
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = html;
+
+          const newList = tempDiv.querySelector('.product-list');
+          if(newList) productListContainer.innerHTML = newList.innerHTML;
+
+          const newPagination = tempDiv.querySelector('.pagination-wrapper');
+          if(newPagination) paginationWrapper.innerHTML = newPagination.innerHTML;
+
+          const newCount = tempDiv.querySelector('.product-count');
+          if(newCount) productCount.innerHTML = newCount.innerHTML;
+      }
+
+      // 필터 적용
+      function triggerFilter() {
+          const params = {
+              area: selectedArea,
+              category: filterForm.querySelector('input[name="category"]:checked')?.value || '',
+              minPrice: filterForm.querySelector('input[name="minPrice"]').value,
+              maxPrice: filterForm.querySelector('input[name="maxPrice"]').value,
+              keyword: filterForm.querySelector('input[name="keyword"]')?.value || ''
+          };
+          fetchProductList(params);
+      }
+
+      // ===== 우리동네보기 / 숨기기 버튼 =====
+      async function showMyLocation() {
+          try {
+              const pos = await new Promise((res, rej) => {
+                  navigator.geolocation.getCurrentPosition(
+                      p => res({lat: p.coords.latitude, lng: p.coords.longitude}),
+                      err => rej(err)
+                  );
+              });
+
+              const dongList = await fetchDongListByCoords(pos.lat, pos.lng); // 기존 fetchDongListByCoords 사용
+              
+              
+              if (!selectedArea || !dongList.includes(selectedArea)) {
+                  selectedArea = dongList[0] || ''; // 이전 선택값이 없으면 첫번째 선택
+              }
+              
+              updateAreaRadios(dongList);
+              areaRadioList.style.display = 'block';
+              radioVisible = true;
+
+              btnShow.style.display = 'none';
+              btnHide.style.display = 'inline-block';
+
+              triggerFilter();
+          } catch(e) {
+              console.error(e);
+              alert("위치 정보를 가져오지 못했습니다.");
+          }
+      }
+
+      function hideMyLocation() {
+         
+          updateAreaRadios([]);
+          areaRadioList.style.display = 'none';
+          radioVisible = false;
+
+          btnShow.style.display = 'inline-block';
+          btnHide.style.display = 'none';
+
+          triggerFilter();
+      }
+
+      btnShow.addEventListener('click', showMyLocation);
+      btnHide.addEventListener('click', hideMyLocation);
+
+      // 초기 라디오/버튼 상태
+      if(selectedArea){
+          updateAreaRadios([selectedArea]);
+          areaRadioList.style.display = 'block';
+          radioVisible = true;
+
+          btnShow.style.display = 'none';
+          btnHide.style.display = 'inline-block';
+      } else {
+          areaRadioList.style.display = 'none';
+          radioVisible = false;
+
+          btnShow.style.display = 'inline-block';
+          btnHide.style.display = 'none';
+      }
+
+      // 카테고리, 가격, 키워드 변경 이벤트
+      filterForm.querySelectorAll('input[name="category"], input[name="minPrice"], input[name="maxPrice"]').forEach(el=>{
+          el.addEventListener('change', triggerFilter);
+      });
+      const keywordInput = filterForm.querySelector('input[name="keyword"]');
+      if(keywordInput){
+          keywordInput.addEventListener('keypress', e=>{
+              if(e.key==='Enter'){ e.preventDefault(); triggerFilter(); }
+          });
+      }
+   // 카테고리 라디오 클릭 시 triggerFilter 호출
+      filterForm.querySelectorAll('input[name="category"]').forEach(el => {
+          el.addEventListener('change', triggerFilter);
+      });
+
+      // 페이지 버튼 Ajax 적용
+      paginationWrapper.addEventListener('click', e=>{
+          if(e.target.tagName==='A'){
+              e.preventDefault();
+              const page = new URL(e.target.href, window.location.origin).searchParams.get('page');
+              const params = {
+                  page,
+                  area: document.querySelector('input[name="area"]:checked')?.value || '',
+                  category: document.querySelector('input[name="category"]:checked')?.value || '',
+                  minPrice: document.querySelector('input[name="minPrice"]').value,
+                  maxPrice: document.querySelector('input[name="maxPrice"]').value,
+                  keyword: document.querySelector('input[name="keyword"]').value || ''
+              };
+              fetchProductList(params);
+          }
+      });
+  });
+  </script>
+
+
+	
+	 <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC6GZL5JoPGTDsQqjhGD-dgKj7hRQSTxfE&"
+      async defer>
+    </script>
+
+</body>
+</html>
