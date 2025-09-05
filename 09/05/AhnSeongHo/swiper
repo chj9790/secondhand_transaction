@@ -1,0 +1,27 @@
+# controller change
+
+@GetMapping("product_detail.go")
+    public String productDetail(@RequestParam(name = "product_num") int productNum, Model model) {
+        
+    	this.mapper.update_product_hits(productNum);
+    	
+    	ProductDTO product = this.mapper.selectProduct(productNum);
+    	String sellerNickname = this.mapper.getUserNickname(product.getUser_id());
+        model.addAttribute("product", product);
+        model.addAttribute("sellerNickname", sellerNickname);
+        return "product_detail";
+    }
+
+
+# mapper interface add
+
+String getUserNickname(String userId);
+
+
+# transaction.xml add
+
+<select id="getUserNickname" parameterType="String" resultType="String">
+	    select user_nickname
+	    from transaction_user
+	    where user_id = #{userId}
+	</select>
