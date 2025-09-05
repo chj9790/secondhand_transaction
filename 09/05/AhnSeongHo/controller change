@@ -1,0 +1,13 @@
+// 로그아웃 기능
+	@GetMapping("/logout.go")
+	public void logout(HttpSession session, HttpServletResponse response) throws IOException {
+	    session.invalidate();  
+
+	    response.setContentType("text/html; charset=UTF-8");
+	    PrintWriter out = response.getWriter();
+	    out.println("<script>");
+	    out.println("alert('로그아웃 되었습니다.');");
+	    out.println("location.href='/';");  
+	    out.println("</script>");
+	    out.close();
+	}
