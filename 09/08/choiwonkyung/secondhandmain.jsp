@@ -636,12 +636,28 @@ document.addEventListener("DOMContentLoaded", function(){
       if (newCount) productCount.innerHTML = newCount.innerHTML;
   };
 
-//===== 수정된 triggerFilter() =====
+//      triggerFilter() 
   window.triggerFilter = function() {
       const filterForm = document.getElementById('filterForm');
       if(!filterForm) return;
 
-      // ===== 수정: 라디오 우선, 없으면 select 최종값 사용 =====
+      
+      // ===== 가격 값 가져오기 =====
+      const minInput = filterForm.querySelector('input[name="minPrice"]');
+      const maxInput = filterForm.querySelector('input[name="maxPrice"]');
+      let minVal = parseFloat(minInput?.value) || 0;
+      let maxVal = parseFloat(maxInput?.value) || 0;
+
+      // ===== 가격 검증 =====
+      if (minVal < 0 || maxVal < 0) {
+          alert("가격은 0 이상의 숫자만 입력 가능합니다.");
+          return; // Ajax 호출 막음
+      }
+      if (maxVal > 0 && minVal > maxVal) {
+          alert("최소 가격은 최대 가격보다 클 수 없습니다.");
+          return;
+      }    
+      //  라디오 우선, 없으면 select 최종값 사용 
       const areaRadio = document.querySelector('input[name="area"]:checked');
       const finalAreaInput = document.getElementById('finalArea');
       
@@ -882,10 +898,50 @@ document.addEventListener("DOMContentLoaded", function(){
               }
           });
       }
+      
+      const minInput = document.getElementById("minPrice");
+      const maxInput = document.getElementById("maxPrice");
+      
+      
+      
+
+      if(minInput && maxInput){
+          // 최소 가격 입력 실시간 검증
+          minInput.addEventListener('input', () => {
+              let minVal = parseFloat(minInput.value) || 0;
+              let maxVal = parseFloat(maxInput.value) || 0;
+
+              if(minVal < 0){
+                  alert("최소 가격은 0 이상의 숫자여야 합니다.");
+                  minInput.value = '';
+                  return;
+              } 
+              if(maxVal > 0 && minVal > maxVal){
+                  alert("최소 가격은 최대 가격보다 클 수 없습니다.");
+                  minInput.value = maxVal;
+                  return;
+              }
+
+              maxInput.min = Math.max(0, minVal);
+          });
+
+          // 최대 가격 입력 실시간 검증
+          maxInput.addEventListener('input', () => {
+              let minVal = parseFloat(minInput.value) || 0;
+              let maxVal = parseFloat(maxInput.value) || 0;
+
+              if(maxVal < 0){
+                  alert("최대 가격은 0 이상의 숫자여야 합니다.");
+                  maxInput.value = '';
+                  return;
+              }
+            
+          });
+      } 
+      
   });
-  
-  
-  
+
+
 </script>
 
 
