@@ -1,0 +1,90 @@
+main&secondhand_list 부분 컨트롤러 	
+
+@GetMapping("/")
+	public String main(@RequestParam(value = "page", defaultValue = "1") int page,
+			Model model) {
+	
+ 		totalRecord = this.mapper.products_count();
+		
+		PageDTO pdto = new PageDTO(page, rowsize, totalRecord);
+	
+		List<ProductDTO> productlist = mapper.product_list(pdto);  // 전체 제품
+		
+	    List<RegionCodeDTO> areas = this.mapper.area_list();
+		
+		List<CategoryDTO> category = mapper.category_list();
+		
+		model.addAttribute("productList", productlist)
+			.addAttribute("areas", areas)
+			.addAttribute("paging", pdto)	
+			.addAttribute("category", category);
+		
+		return "main";
+		
+	}
+ 	
+ 	@GetMapping("secondhand_list.go")
+ 	public String secondhandList(
+ 	        @RequestParam(value = "area", required = false) String area,
+ 	        @RequestParam(value = "topRegion", required = false) String topRegion,
+ 	        @RequestParam(value = "midRegion", required = false) String midRegion,
+ 	        @RequestParam(value = "subRegion", required = false) String subRegion,
+ 	        @RequestParam(value = "detailRegion", required = false) String detailRegion,
+ 	        
+ 	        @RequestParam(value = "category", required = false) String category,
+ 	        @RequestParam(value = "keyword", required = false) String keyword,
+ 	        @RequestParam(value = "minPrice", required = false) Integer minPrice,
+ 	        @RequestParam(value = "maxPrice", required = false) Integer maxPrice,
+ 	        @RequestParam(value = "page", defaultValue = "1") int page,
+ 	        Model model) {
+
+	    List<RegionCodeDTO> areas = this.mapper.area_list();
+ 		
+ 	    // 선택된 지역
+ 	    String selectedArea = area;
+ 	    
+ 	    if (selectedArea == null || selectedArea.isEmpty()) {
+ 	        if (detailRegion != null && !detailRegion.isEmpty()) {
+ 	            selectedArea = detailRegion;
+ 	        } else if (subRegion != null && !subRegion.isEmpty()) {
+ 	            selectedArea = subRegion;
+ 	        } else if (midRegion != null && !midRegion.isEmpty()) {
+ 	            selectedArea = midRegion;
+ 	        } else if (topRegion != null && !topRegion.isEmpty()) {
+ 	            selectedArea = topRegion;
+ 	        }
+ 	    }
+
+ 	    // 필터링 조건 map
+ 	    Map<String, Object> filterMap = new HashMap<>();
+ 	    filterMap.put("area", selectedArea);  // 쿼리 XML에서 #{area}와 매핑
+ 	    filterMap.put("category", category);
+ 	    filterMap.put("keyword", keyword);
+ 	    filterMap.put("minPrice", minPrice);
+ 	    filterMap.put("maxPrice", maxPrice);
+
+ 	    // 총 레코드 수
+ 	    int totalRecord = mapper.products_search_count(filterMap);
+
+ 	    // PageDTO 생성 (페이징 + 필터 조건 유지)
+ 	    PageDTO pdto = new PageDTO(page, rowsize, totalRecord, selectedArea, category, keyword, minPrice, maxPrice);
+
+ 	    // 필터 조건 적용한 상품 리스트
+ 	    List<ProductDTO> productList = mapper.products_search_list(pdto);
+
+ 	    // 카테고리 리스트
+ 	    List<CategoryDTO> categorylist = mapper.category_list();
+
+ 	    // 모델에 데이터 바인딩
+ 	    model.addAttribute("area", selectedArea)
+ 	    .addAttribute("areas", areas)
+ 	    .addAttribute("productList", productList)
+ 	    .addAttribute("categorylist", categorylist)
+ 	    .addAttribute("category", category)
+ 	    .addAttribute("paging", pdto)
+ 	    .addAttribute("minPrice", minPrice)
+ 	    .addAttribute("maxPrice", maxPrice)
+ 	    .addAttribute("keyword", keyword);
+
+ 	    return "product_search_list";
+ 	}
