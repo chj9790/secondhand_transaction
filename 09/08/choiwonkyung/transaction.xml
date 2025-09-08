@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.boot.transaction.model.TransactionMapper">
+
+	<select id="product_list" parameterType="Page" resultType="Product">
+        <![CDATA[
+  			select * from
+				(select row_number()
+					over(order by product_date desc) rnum, a.* from transaction_product a)
+						where rnum >= #{startNo} and rnum <= #{endNo}
+  		]]>
+	</select>
+	
+	
+	<!-- 지역 대조검색 기능 추가 !! -->
+	
+	<select id="findRegionsByAddress" parameterType="string" resultType="Region">
+	    SELECT code, name, is_active
+	    FROM region_codes
+	    WHERE name LIKE '%' || #{address} || '%'
+	      AND is_active = 'Y'
+	</select>
+	
+		<!-- 확실한 추가코드 -->
+  
+	<select id="area_list" resultType="Region">    
+		select * from region_codes order by name
+	</select>
+	
+	
+	<select id="products_count" resultType="int">
+		select count(*) from transaction_product
+	</select>
+
+	<select id="products_search_count" parameterType="map" resultType="int">
+	    select count(*) from transaction_product
+	    where 1=1
+	    <if test="area != null and area != ''">
+            AND sales_area LIKE '%' || #{area} || '%'
+        </if>
+        <choose>
+	        <when test="category == 'etc'">
+	            AND category_code IS NULL
+	        </when>
+	        <when test="category != null and category != ''">
+	            AND category_code = #{category}
+	        </when>
+	    </choose>
+        <if test="keyword != null and keyword != ''">
+		  AND REPLACE(product_title, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%'
+		</if>
+		<if test="minPrice != null">
+		    AND sales_price &gt;= #{minPrice}
+		</if>
+		<if test="maxPrice != null">
+		    AND sales_price &lt;= #{maxPrice}
+		</if>
+	</select>
+	
+	
+	<!-- 글 조회 기능 -->
+	<select id="selectProduct" parameterType="int" resultType="Product">
+	    select * from transaction_product where product_num = #{product_num}
+	</select>
+	
+	<update id="update_product_hits" parameterType="int">
+		update transaction_product set product_hits = product_hits + 1
+			where product_num = #{product_num}
+	</update>
+	
+	
+	<!-- 검색 기능 -->
+	<select id="products_search_list" parameterType="Page" resultType="Product">
+	    SELECT * FROM (
+	        SELECT b.*, rownum AS rn FROM (
+	            SELECT * FROM transaction_product
+	            WHERE 1=1
+	            <if test="area != null and area != ''">
+	                AND sales_area LIKE '%' || #{area} || '%'
+	            </if>
+	            <if test="category != null and category != ''">
+                <choose>
+				    <when test="category == 'etc'">
+				        AND category_code IS NULL
+				    </when>
+				    <when test="category != null and category != ''">
+				        AND category_code = #{category}
+				    </when>
+				</choose>
+            </if>
+	            <if test="keyword != null and keyword != ''">
+				  AND REPLACE(product_title, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%'
+				</if>
+				<if test="minPrice != null">
+				    AND sales_price &gt;= #{minPrice}
+				</if>
+				<if test="maxPrice != null">
+				    AND sales_price &lt;= #{maxPrice}
+				</if>
+	            ORDER BY product_date DESC
+	        ) b
+	        WHERE rownum &lt;= #{endNo}
+	    )
+	    WHERE rn &gt;= #{startNo}
+	</select>
+
+	<select id="category_list" resultType="Category">
+		select * from transaction_category order by category_num
+	</select>
+	
+	<select id="product_list_by_category" parameterType="string" resultType="Product">
+	    SELECT * FROM transaction_product WHERE category_code = #{categoryCode}
+	    	ORDER BY product_date DESC
+	</select>
+
+
+
+
+</mapper>
