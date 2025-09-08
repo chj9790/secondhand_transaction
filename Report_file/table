@@ -1,0 +1,167 @@
+--------------- 유저 테이블 ------------------
+
+CREATE TABLE transaction_user (
+    user_id         VARCHAR2(20) PRIMARY KEY,   -- ID
+    user_pwd        VARCHAR2(20) NOT NULL,     -- pwd
+    user_name       VARCHAR2(30) NOT NULL,     -- 이름
+    user_nickname   VARCHAR2(20) NOT NULL,    -- 닉네임
+    user_age        NUMBER(3) NOT NULL,          -- 나이 
+    user_email      VARCHAR2(50) NOT NULL,     -- 이메일
+    user_phone      VARCHAR2(20) NOT NULL,    -- 휴대폰 번호
+    user_zipcode    VARCHAR2(10),                  -- 우편번호
+    user_addr       VARCHAR2(100),                 -- 기본 주소
+    user_addr_detail VARCHAR2(100),               -- 상세 주소
+    user_regdate    DATE NOT NULL                -- 유저 가입날짜
+);
+
+-------------- 지역 테이블 --------------
+
+CREATE TABLE region_codes (
+    code VARCHAR2(10) PRIMARY KEY,
+    name VARCHAR2(100) NOT NULL,
+    is_active CHAR(1) NOT NULL
+);
+
+---------------채팅 테이블 ---------------
+
+-- 1. 시퀀스 생성
+CREATE SEQUENCE trans_chat_msg_seq START WITH 1 INCREMENT BY 1;
+
+-- 2. 테이블 생성
+CREATE TABLE transaction_chat_messages (
+    message_id NUMBER PRIMARY KEY,
+    from_user VARCHAR2(50) NOT NULL,
+    to_user VARCHAR2(50) NOT NULL,
+    product_num NUMBER NOT NULL,
+    message CLOB NOT NULL,
+    sent_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_read NUMBER(1) DEFAULT 0,
+    chat_room_num number DEFAULT 0 not null,
+    is_leave NUMBER(1) DEFAULT 0
+);
+
+-- 3. 트리거 생성
+CREATE OR REPLACE TRIGGER trans_chat_msg_bi
+BEFORE INSERT ON transaction_chat_messages
+FOR EACH ROW
+BEGIN
+    IF :NEW.message_id IS NULL THEN
+        SELECT trans_chat_msg_seq.NEXTVAL INTO :NEW.message_id FROM dual;
+    END IF;
+END;
+/
+
+--------------- 댓글 테이블 -----------------
+
+create table product_comment (
+    comment_id      number(10) primary key,                     
+    product_num    number(10) not null,                      
+    user_id         varchar2(20) not null,                      
+    comment_content varchar2(500) not null,                     
+    comment_date    timestamp default current_timestamp,        
+
+    constraint fk_comment_product foreign key (product_num)
+        references transaction_product(product_num)
+        on delete cascade,
+
+    constraint fk_comment_user foreign key (user_id)
+        references transaction_user(user_id)
+        on delete cascade
+);
+
+-- 시퀀스
+CREATE SEQUENCE PRODUCT_COMMENT_SEQ
+    START WITH 1
+    INCREMENT BY 1
+    NOCACHE
+    NOCYCLE;
+
+-- 트리거
+create or replace TRIGGER trg_product_comment_id
+BEFORE INSERT ON product_comment
+FOR EACH ROW
+BEGIN
+    IF :new.comment_id IS NULL THEN
+        SELECT product_comment_seq.nextval INTO :new.comment_id FROM dual;
+    END IF;
+END;
+
+------------ 신고 테이블 -----------------
+
+create table transaction_report(
+    report_num number primary key,              -- 신고 아이디(번호)
+    product_num number(10),                     -- 신고된 판매글 번호
+    reporter_id varchar2(20) not null,          -- 신고자 아이디
+    reported_user_id varchar2(20) not null,     -- 신고된 아이디
+    reported_at date not null,                  -- 신고된 시간
+    report_reason varchar2(100) not null,       -- 신고 사유
+    constraint product_num_fk foreign key(product_num) 
+        references transaction_product(product_num) on delete set null
+);
+
+
+-- 시퀀스
+CREATE SEQUENCE seq_transaction_report
+    START WITH 1
+    INCREMENT BY 1
+    NOCACHE
+    NOCYCLE;
+
+-- 트리거
+CREATE OR REPLACE TRIGGER trg_transaction_report_bi
+BEFORE INSERT ON transaction_report
+FOR EACH ROW
+BEGIN
+    IF :NEW.report_num IS NULL THEN
+        SELECT seq_transaction_report.NEXTVAL
+        INTO :NEW.report_num
+        FROM dual;
+    END IF;
+END;
+
+----------- 상품 -------------
+create table transaction_product(
+    product_num number(10) primary key,
+    category_code varchar2(10),
+    product_name varchar2(50) not null,
+    product_date date not null,
+    product_img varchar2(200),          -- null 값 허용하여 상품 이미지를 등록하지 않을 경우
+                                        -- 해당 컬럼이 null 처리 되어 기본 이미지 출력 되도록 할 예정.
+    product_des varchar2(1000),          -- 상품 설명 (null 가능).
+    user_id varchar2(20) not null,
+    sales_price number(10),
+    sales_area varchar2(50) not null,   -- 지도 api를 추가하면서 위치정보에 대한 테이블을 추가적으로 생성 시
+                                        -- 해당 컬럼을 외래키로 잡고 새로 생성한 위치정보 테이블의 primary key를
+                                        -- 참조키로 잡아야 함.
+                                        -- 위치 정보 테이블에서 참조키인 컬럼이 모종의 이유로 삭제될 경우
+                                        -- 해당 외래키 컬럼은 어떻게 처리할 지 생각해야 함. (판매지역이 null 이 될 수는 없지만
+                                        -- 지역에 해당하는 모든 상품 데이터가 삭제되는 것도 말이 안 됨.)
+    product_title varchar2(100) not null,
+    product_hits number(10) default 0,
+    product_status varchar2(50) default '판매중',
+    constraint category_code_fk foreign key(category_code)
+        references transaction_category(category_code)
+        on delete set null,
+    constraint user_id_fk foreign key(user_id)
+        references transaction_user(user_id)
+        on delete cascade   -- 상품을 등록한 회원의 정보가 삭제될 경우 해당 회원이 등록한 상품도 삭제처리.
+);
+
+---------------- 카테고리 ---------------------
+
+create table transaction_category(
+    category_num number(10) primary key,
+    category_code varchar2(10) unique,
+    category_name varchar2(30) not null
+);
+
+INSERT INTO transaction_category (category_num, category_code, category_name) VALUES (1, 'LAP', '노트북');
+INSERT INTO transaction_category (category_num, category_code, category_name) VALUES (2, 'MON', '모니터');
+INSERT INTO transaction_category (category_num, category_code, category_name) VALUES (3, 'PHN', '스마트폰');
+INSERT INTO transaction_category (category_num, category_code, category_name) VALUES (4, 'TBL', '태블릿');
+INSERT INTO transaction_category (category_num, category_code, category_name) VALUES (5, 'CAM', '카메라');
+INSERT INTO transaction_category (category_num, category_code, category_name) VALUES (6, 'TVS', 'TV/디스플레이');
+INSERT INTO transaction_category (category_num, category_code, category_name) VALUES (7, 'AUD', '오디오기기');
+INSERT INTO transaction_category (category_num, category_code, category_name) VALUES (8, 'GME', '게임기');
+INSERT INTO transaction_category (category_num, category_code, category_name) VALUES (9, 'ACC', '주변기기/액세서리');
+INSERT INTO transaction_category (category_num, category_code, category_name) VALUES (10, null, '기타 전자제품');
