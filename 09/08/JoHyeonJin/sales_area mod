@@ -1,0 +1,12 @@
+<choose>
+			   		<when test="area != null and area.endsWith('동')">
+			       		AND (
+		           			sales_area LIKE '% ' || #{area}
+		           			OR sales_area LIKE #{area}
+			       		)
+			   		</when>
+					
+			   		<otherwise>
+		        		AND sales_area LIKE #{area} || '%'
+		    		</otherwise>
+				</choose>
