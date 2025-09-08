@@ -1,0 +1,21 @@
+개발도구 & 운영체제 : 
+
+  운영체제(OS) window 10 
+  JDK(java) 17
+  Gradle 8.14.2
+  Spring Tool Suite 4 : 4.22.0
+
+서버 & 데이터베이스 : 
+
+웹 서버 : tomcat 10 
+데이터베이스 : Oracle Datebase
+jdbc 드라이버 : ojdbc11
+Orm/매퍼 : Mybatis 3.0.3
+
+웹 기술 
+
+벡엔드 프레임워크 :  Spring boot 3.5.3
+뷰 템플릿 : JSP + JSTL 3.0x
+WEbsocket : Jakarta WebSocket 2.1.0 + Spring WebSocket
+프론트엔드 : HTML5, CSS3, JavaScript
+테스트 프레임워크: JUnit5
