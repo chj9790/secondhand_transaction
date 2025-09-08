@@ -264,20 +264,6 @@ body {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-  // ===== 가격 검색 최솟값 설정 =====
-  const minPriceInput = document.getElementById("minPrice");
-  const maxPriceInput = document.getElementById("maxPrice");
-
-  if (minPriceInput && maxPriceInput) {
-    minPriceInput.addEventListener("input", () => {
-      const minVal = parseFloat(minPriceInput.value) || 0;
-      maxPriceInput.min = Math.max(0, minVal);
-    });
-  }
-
-
-  
-  
 
   // ===== 무료나눔 버튼 =====
   function submitFreeShare() {
